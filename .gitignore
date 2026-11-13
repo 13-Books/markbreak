@@ -1,0 +1,6 @@
+out/
+_unzip_*/
+*.docx
+*.zip
+.DS_Store
+Thumbs.db
