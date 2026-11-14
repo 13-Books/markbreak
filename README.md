@@ -4,6 +4,8 @@
 
 Open dialect: [markbreak.com](https://markbreak.com) · Repo: [13-Books/markbreak](https://github.com/13-Books/markbreak) · Writer: [markbreak.app](https://markbreak.app)
 
+**Profile version:** [0.2.0](VERSION) (semver — tag as `v0.2.0`)
+
 ## Why
 
 **MarkBreak** — a Pandoc Markdown **profile** for print manuscripts: YAML roles + hard flow breaks + conformance tests — engine-agnostic.
@@ -75,6 +77,7 @@ bash tools/verify.sh
 
 | Path | Role |
 |------|------|
+| [VERSION](VERSION) | Semver of this profile (`vX.Y.Z` tags) |
 | [specification.md](specification.md) | Dialect (normative) — single source of truth |
 | [index.html](index.html) | markbreak.com landing |
 | `fixtures/` | Canonical manuscripts |

@@ -1,4 +1,4 @@
-# MarkBreak — Specification (draft 0.2)
+# MarkBreak — Specification (0.2.0)
 
 **Product:** [MarkBreak](https://markbreak.com) — print manuscript profile for Pandoc Markdown.  
 **Writer:** [markbreak.app](https://markbreak.app) emits this profile; it is not a second dialect.
@@ -49,7 +49,7 @@ spine:
 
 Markdown headings alone do not say *why* a block exists. MarkBreak labels print roles in YAML.
 
-### 3.1 Closed vocabulary (0.2)
+### 3.1 Closed vocabulary (0.2.0)
 
 `dedication` · `epigraph` · `preface` · `part` · `chapter` · `appendix` · `epilog` · `afterword` · `colophon` · `toc` (optional stub)
 
@@ -95,13 +95,17 @@ These MUST normalize to `\newpage` before or during the reference toolchain:
 - `//---` (processors MUST also accept the smart-typography form `//—`)
 - `//break`
 
-### 5.3 Reserved overrides (0.2 — not yet gated)
+### 5.3 Overrides (gated)
 
-| Authoring | Intent | Canonical TeX (when implemented) |
-|-----------|--------|----------------------------------|
-| `//break column` | Force column | `\columnbreak` |
-| `//break odd` | Force odd page | `\cleardoublepage` |
-| `//break even` | Force even page | Docx-first; TeX best-effort |
+On their own line, surrounded by blank lines:
+
+| Authoring | Intent | Docx gate | TeX |
+|-----------|--------|-----------|-----|
+| `//break column` | Force column | `w:br` `w:type="column"` | `\columnbreak` |
+| `//break odd` | Force odd (recto) page | `w:type w:val="oddPage"` section mark | `\cleardoublepage` |
+| `//break even` | Force even (verso) page | `w:type w:val="evenPage"` section mark | best-effort clear-to-even |
+
+Processors MUST also accept TeX forms `\columnbreak` and `\cleardoublepage` as column and odd overrides when present as raw TeX.
 
 ### 5.4 Forbidden as hard break
 
@@ -114,7 +118,10 @@ Processors MAY accept a form-feed-only paragraph (`\f`) as a default flow break.
 
 ### 5.6 Docx requirement
 
-With `bash tools/verify.sh`, each default flow break MUST produce at least one Word page break (`w:type="page"`) in document order.
+With `bash tools/verify.sh`:
+
+- each default flow break MUST produce at least one Word page break (`w:type="page"`) in document order  
+- `fixtures/break-overrides.md` MUST produce at least one `w:type="column"`, one `oddPage`, and one `evenPage` mark
 
 ## 6. Thematic breaks
 
@@ -140,8 +147,9 @@ Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert 
 
 ## 10. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.2)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant (0.2.0)** if `bash tools/verify.sh` exits 0 against:
 
 - `fixtures/minimal-pagebreak.md`
 - `fixtures/parts-and-chapters.md`
 - `fixtures/roles-and-breaks.md`
+- `fixtures/break-overrides.md`
