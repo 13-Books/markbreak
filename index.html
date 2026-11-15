@@ -134,7 +134,7 @@
     <h1>A Markdown profile for printed matter.</h1>
     <p class="lede">
       Put the print <code>role</code> in the YAML front matter.
-      Put the hard break on its own line — <code>\newpage</code> or <code>//---</code>.
+      Put the hard break on its own line — <code>//break</code>.
       Leave <code>---</code> for the scene.
     </p>
     <div class="cta">
@@ -156,13 +156,13 @@ role: epilog
 
     <section>
       <h2>Breaks</h2>
-      <p><code>\newpage</code> or <code>//---</code> starts the next page. <code>---</code> or <code>***</code> is a pause in the scene — not a page.</p>
-      <p>Write a break when you need a hard page. Use <code>//break odd</code>, <code>//break even</code>, or <code>//break column</code> when the advance must be specific.</p>
+      <p><code>//break</code> advances the story. With one column, that is the next page. <code>//break page</code> forces a page. <code>---</code> or <code>***</code> is a pause in the scene.</p>
+      <p>Use <code>//break odd</code> or <code>//break even</code> when the page side must be specific.</p>
     </section>
 
     <section>
       <h2>The check</h2>
-      <p>When you write a flow break, this fails if it does not survive as a real Word page break. Manuscripts are not required to include breaks.</p>
+      <p>When you write <code>//break</code>, this fails if Word does not receive that break. Manuscripts are not required to include breaks.</p>
       <pre><code>bash tools/verify.sh</code></pre>
     </section>
 

@@ -81,7 +81,7 @@ ok() { echo "OK   $1"; }
 fail() { echo "FAIL $1"; failed=$((failed + 1)); }
 
 check() {
-  local name="$1" min="$2" role="$3"
+  local name="$1" min="$2" role="$3" colmin="${4:-}"
   local src="$root/fixtures/${name}.md"
   local docx="$out/${name}.docx"
   local json="$out/${name}.json"
@@ -96,6 +96,17 @@ check() {
     fail "$name page breaks"
   else
     ok "$name page breaks"
+  fi
+
+  if [[ -n "$colmin" ]]; then
+    local columns
+    columns="$(count_re "$docx" 'w:type\s*=\s*"column"')"
+    echo "$name: column breaks = $columns (need >= $colmin)"
+    if (( columns < colmin )); then
+      fail "$name column breaks"
+    else
+      ok "$name column breaks"
+    fi
   fi
 
   if role_present "$json" "$role"; then
@@ -114,13 +125,15 @@ check_overrides() {
   "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
   "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
 
-  local columns odds evens
+  local columns pages odds evens
   columns="$(count_re "$docx" 'w:type\s*=\s*"column"')"
+  pages="$(count_re "$docx" 'w:type\s*=\s*"page"')"
   odds="$(count_re "$docx" 'w:val\s*=\s*"oddPage"')"
   evens="$(count_re "$docx" 'w:val\s*=\s*"evenPage"')"
 
-  echo "$name: column=$columns oddPage=$odds evenPage=$evens (need >= 1 each)"
+  echo "$name: column=$columns page=$pages oddPage=$odds evenPage=$evens (need >= 1 each)"
   if (( columns < 1 )); then fail "$name column break"; else ok "$name column break"; fi
+  if (( pages < 1 )); then fail "$name page break"; else ok "$name page break"; fi
   if (( odds < 1 )); then fail "$name oddPage break"; else ok "$name oddPage break"; fi
   if (( evens < 1 )); then fail "$name evenPage break"; else ok "$name evenPage break"; fi
 
@@ -141,13 +154,19 @@ check_spine() {
   "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
   "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
 
-  local count roles
+  local count columns roles
   count="$(count_re "$docx" 'w:type\s*=\s*"page"')"
-  echo "$name: page breaks = $count (need >= 2)"
-  if (( count < 2 )); then
+  columns="$(count_re "$docx" 'w:type\s*=\s*"column"')"
+  echo "$name: page breaks = $count (need >= 1); column breaks = $columns (need >= 1)"
+  if (( count < 1 )); then
     fail "$name page breaks"
   else
     ok "$name page breaks"
+  fi
+  if (( columns < 1 )); then
+    fail "$name column breaks"
+  else
+    ok "$name column breaks"
   fi
 
   roles="$(top_roles "$json")"
@@ -171,7 +190,7 @@ check_spine_mismatch() {
 
 check minimal-pagebreak 1 chapter
 check parts-and-chapters 3 part
-check roles-and-breaks 2 dedication
+check roles-and-breaks 1 dedication 1
 check_overrides
 check_spine
 check_spine_mismatch

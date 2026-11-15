@@ -1,4 +1,4 @@
-# MarkBreak — Specification (0.3.0)
+# MarkBreak — Specification (0.4.0)
 
 **Product:** [MarkBreak](https://markbreak.com) — print manuscript profile for Pandoc Markdown.  
 **Writer:** [markbreak.app](https://markbreak.app) emits this profile; it is not a second dialect.
@@ -7,7 +7,7 @@
 
 **Normative intent:** a MarkBreak manuscript MUST round-trip through Pandoc to Docx with hard flow breaks intact, SHOULD carry YAML `role` into the Pandoc AST, and SHOULD remain readable as ordinary Markdown where unknown lines are ignored.
 
-This is a **profile** of Pandoc Markdown, not a rival language. See [Why](README.md#Why).
+This is a **profile** of Pandoc Markdown, not a rival language. See [Purpose](README.md#Purpose).
 
 **RigWorks:** Portable meaning uses `rig.media.code` + `rig.story.flow.role` + `rig.story.paragraph.breakType`. See [rig.works](http://www.rig.works/) and example `markbreak-chapter.json`.
 
@@ -78,34 +78,40 @@ A **flow break** advances the story. In a layout with **no columns**, that is a 
 
 There is **no** distinct `frame` break token — the default break *is* frame-advance unless overridden.
 
-### 5.1 Default (canonical)
+### 5.1 Default
 
 On its own line, surrounded by blank lines:
 
 ```markdown
-\newpage
+//break
 ```
 
-Compliant processors MUST treat this as a Docx page break (`w:br` with `w:type="page"`) via the reference filter (or equivalent OpenXML).
+This is the normal advance. The reference filter emits a Docx column break (`w:br` with `w:type="column"`). In a one-column section, Word shows that as a new page. In a multi-column section, it advances to the next column.
 
-### 5.2 Authoring aliases (normative)
+For TeX, the filter emits `\columnbreak` when that command exists, and `\newpage` otherwise.
 
-These MUST normalize to `\newpage` before or during the reference toolchain:
+### 5.2 Forced page
 
-- `//---` (processors MUST also accept the smart-typography form `//—`)
-- `//break`
+On its own line, surrounded by blank lines:
 
-### 5.3 Overrides (gated)
+```markdown
+//break page
+```
+
+Compliant processors MUST treat this as a Docx page break (`w:br` with `w:type="page"`). TeX output is `\newpage`.
+
+Processors MUST also treat raw `\newpage` and `\pagebreak` as this forced page.
+
+### 5.3 Page side (gated)
 
 On their own line, surrounded by blank lines:
 
 | Authoring | Intent | Docx gate | TeX |
 |-----------|--------|-----------|-----|
-| `//break column` | Force column | `w:br` `w:type="column"` | `\columnbreak` |
 | `//break odd` | Force odd (recto) page | `w:type w:val="oddPage"` section mark | `\cleardoublepage` |
 | `//break even` | Force even (verso) page | `w:type w:val="evenPage"` section mark | best-effort clear-to-even |
 
-Processors MUST also accept TeX forms `\columnbreak` and `\cleardoublepage` as column and odd overrides when present as raw TeX.
+Processors MUST also accept raw `\columnbreak` as `//break`, and raw `\cleardoublepage` as `//break odd`.
 
 ### 5.4 Forbidden as hard break
 
@@ -114,14 +120,15 @@ Processors MUST also accept TeX forms `\columnbreak` and `\cleardoublepage` as c
 
 ### 5.5 Form feed
 
-Processors MAY accept a form-feed-only paragraph (`\f`) as a default flow break. Authors SHOULD prefer `\newpage` or `//---`.
+Processors MAY accept a form-feed-only paragraph (`\f`) as `//break`. Authors SHOULD prefer `//break`.
 
 ### 5.6 Docx requirement
 
 With `bash tools/verify.sh`:
 
-- each default flow break MUST produce at least one Word page break (`w:type="page"`) in document order  
-- `fixtures/break-overrides.md` MUST produce at least one `w:type="column"`, one `oddPage`, and one `evenPage` mark
+- each `//break` MUST produce a Word column break (`w:type="column"`) in document order
+- each `//break page` and each raw `\newpage` MUST produce a Word page break (`w:type="page"`) in document order
+- `fixtures/break-overrides.md` MUST produce at least one `w:type="column"`, one `w:type="page"`, one `oddPage`, and one `evenPage` mark
 
 ## 6. Thematic breaks
 
@@ -147,7 +154,7 @@ Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert 
 
 ## 10. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.3.0)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant (0.4.0)** if `bash tools/verify.sh` exits 0 against:
 
 - `fixtures/minimal-pagebreak.md`
 - `fixtures/parts-and-chapters.md`

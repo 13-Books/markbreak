@@ -1,6 +1,7 @@
 -- MarkBreak filter: flow breaks + YAML/file role → Div.
--- Default breaks: \newpage / \pagebreak / //--- / //break → page advance.
--- Overrides: //break column | odd | even (and TeX aliases where noted).
+-- //break is the normal advance (column mark; a one-column page shows it as a page).
+-- //break page, \newpage, and \pagebreak force a page.
+-- //break odd | even name the page side. \columnbreak is the normal advance.
 -- Roles: meta.role wraps that file's body in a Div with attribute role=...
 -- Spine: a root spine list is concatenated in this pass; each file is its own role Div.
 
@@ -15,17 +16,12 @@ end
 local function break_kind(command)
   local s = normalize_command(command)
   if not s then return nil end
-  -- Pandoc smart typography may turn //--- into //— (em dash).
-  if s:match '^\\newpage%{?%}?$'
-      or s:match '^\\pagebreak%{?%}?$'
-      or s == '//---'
-      or s == '//—'
-      or s == '//--'
-      or s == '//break'
-      or s == '\f' then
+  if s == '//break page'
+      or s:match '^\\newpage%{?%}?$'
+      or s:match '^\\pagebreak%{?%}?$' then
     return 'page'
   end
-  if s == '//break column' or s:match '^\\columnbreak%{?%}?$' then
+  if s == '//break' or s == '\f' or s:match '^\\columnbreak%{?%}?$' then
     return 'column'
   end
   if s == '//break odd' or s:match '^\\cleardoublepage%{?%}?$' then
@@ -63,7 +59,9 @@ local function emit_break(format, kind)
     if kind == 'page' then
       return pandoc.RawBlock('tex', '\\newpage{}')
     elseif kind == 'column' then
-      return pandoc.RawBlock('tex', '\\columnbreak{}')
+      -- \columnbreak exists only when a column package defines it.
+      return pandoc.RawBlock('tex',
+        '\\ifdefined\\columnbreak\\columnbreak\\else\\newpage\\fi')
     elseif kind == 'odd' then
       return pandoc.RawBlock('tex', '\\cleardoublepage{}')
     elseif kind == 'even' then

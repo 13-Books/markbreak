@@ -5,13 +5,19 @@ author: "markbreak"
 role: chapter
 ---
 
-# Before overrides
+# Before the flow break
 
-Body before a column break.
+Body before a normal advance.
 
-//break column
+//break
 
-# After column
+# After the flow break
+
+Body before a forced page.
+
+//break page
+
+# After page
 
 Body before an odd-page break.
 

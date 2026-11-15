@@ -1,88 +1,82 @@
 # MarkBreak
 
-**The print manuscript profile Markdown never had.**
+MarkBreak is a Pandoc Markdown profile for print manuscripts.
 
-Open dialect: [markbreak.com](https://markbreak.com) · Repo: [13-Books/markbreak](https://github.com/13-Books/markbreak) · Writer: [markbreak.app](https://markbreak.app)
+- Open profile: [markbreak.com](https://markbreak.com)
+- Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
+- Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.3.0](VERSION) (semver — tag as `v0.3.0`)
+**Profile version:** [0.4.0](VERSION). Tag it `v0.4.0`.
 
-## Why
+## Purpose
 
-**MarkBreak** — a Pandoc Markdown **profile** for print manuscripts: YAML roles + hard flow breaks + conformance tests — engine-agnostic.
+The profile records two facts that standard Markdown does not record.
 
-Markdown authors writing for **print** have no small, enforceable contract for “this manuscript has pages and roles.”
+- The YAML key `role` gives the print function of a file.
+- A heading gives the title level. The heading does not give the print function.
+- Write the normal advance as `//break`.
+- With one column, Word shows `//break` as the next page. With more columns, it is the next column.
+- Write `//break page` to force a page.
+- `---` is a pause in the scene. Do not use `---` as a page break.
 
-- GFM is silent on page breaks (`---` is a thematic break).
-- A `#` heading does not say *epilog* vs *chapter*.
-- HTML book generators and full authoring engines own other jobs.
-- General Markdown editors own chrome, not Docx page-break gates.
-- Pandoc can carry `\newpage` — as folklore, not as a gated profile.
+A processor that obeys this profile writes `//break` as a Word column break.
+The Word mark is `w:br` with `w:type="column"`.
+`//break page` uses `w:type="page"`.
+Run `bash tools/verify.sh` to check the fixtures.
+The full rules are in [specification.md](specification.md).
 
-**MarkBreak** fills the seam between “I wrote `.md`” and “Word / Relay / InDesign / press PDF.”  
-A Pandoc Markdown **profile**: YAML roles, parts/chapters, canonical flow breaks (`\newpage` / `//---`), and CI that goes red when Docx lacks real `w:br type="page"`.
+## When to use it
 
-This is the **input law**, not another HTML book engine or generic editor.
+Use this profile when you write a book as Markdown files.
+You need each chapter to start on a new page in Word, Relay, or a press PDF.
+You need the check to fail when a page break is missing.
 
-### Who hurts
+## Other tools
 
-Someone with a folder of `.md` who needs chapter starts on **real pages** in Word, Relay, or press PDF — and needs CI to fail when a break is missing. Someone who knows a `#` heading is not an epilog.
-
-Today’s answer is a blog post and tribal Pandoc flags. That is the hole.
-
-Plain Markdown is a thin container for meaning ([Rasmus](https://danielwrasmus.substack.com/p/markdown-is-not-the-future-of-writing)): it confuses formatting with structure. MarkBreak answers that **for print books** with YAML `role:` and gated breaks — not with DITA, and not by becoming another HTML book engine.
-
-### Nearby (not us)
-
-| Kind | Owns |
+| Kind | Work |
 |------|------|
 | HTML book generators | Online books from a summary tree |
-| Full authoring engines | Multi-output notebooks / books |
-| HTML/CSS paginators | Browser page layout |
-| General Markdown editors | Editor chrome, not Docx page-break gates |
-| GFM | Screen prose; no page-break law |
-| Pandoc | The pipe — not a print-manuscript product |
-| Relay / Word / InDesign | Layout after ingest |
+| Full authoring engines | Books and notebooks with many outputs |
+| HTML/CSS paginators | Page layout in a browser |
+| General Markdown editors | Editor functions |
+| GFM | Prose for the screen |
+| Pandoc | The conversion program |
+| Relay, Word, InDesign | Layout after this profile |
 
-### Layer cake
+## Sequence
 
-```text
-  Author  →  [ MarkBreak profile ]  →  Pandoc / Docx  →  Relay | Word | InDesign | PDF
-                 ↑
-            spec + fixtures + verify
-                 ↑
-         markbreak.app (writer chrome)
-```
+1. You write the manuscript in Markdown.
+2. The MarkBreak profile supplies the roles and the flow breaks.
+3. Pandoc writes a Docx file.
+4. Relay, Word, InDesign, or a press PDF does the layout.
+5. [markbreak.app](https://markbreak.app) is the writer. The writer emits this profile.
 
-### Brand
+## Checks
 
-- **markbreak.com** — open profile (repo [13-Books/markbreak](https://github.com/13-Books/markbreak)): specification, fixtures, verify.
-- **markbreak.app** — writer (online + desktop) that emits MarkBreak.
+1. Obey [specification.md](specification.md).
+2. Put one `role` in the YAML of each file. A `spine` lists the other files. Each listed file keeps its own role.
+3. Write the normal advance as `//break`. Write `//break page` to force a page. Do not use `---` as a page break.
+4. Run `bash tools/verify.sh`. The command fails when a fixture loses its break. The command also fails when a role is lost.
 
-## Success
+MarkBreak is the print manuscript profile. You can check the roles and the page breaks.
 
-1. **Specification** — [specification.md](specification.md) authors and agents can obey.
-2. **Roles** — YAML `role:`. One file, one role. A `spine` lists the other files; each file keeps its own role.
-3. **Breaks** — `\newpage` / `//---`; `---` never means page break. Default break = flow advance (page when there are no columns).
-4. **Gate** — `bash tools/verify.sh` fails closed when fixtures lack real Docx page breaks or lose roles.
-5. **Boundary sentence:**  
-   *Not another Markdown editor. The print manuscript profile — roles and page breaks you can verify.*
-
-## Quick gate
+## Run the check
 
 ```bash
 bash tools/verify.sh
 ```
 
-## Layout
+## Files
 
-| Path | Role |
-|------|------|
-| [VERSION](VERSION) | Semver of this profile (`vX.Y.Z` tags) |
-| [specification.md](specification.md) | Dialect (normative) — single source of truth |
-| [index.html](index.html) | markbreak.com landing |
-| `fixtures/` | Canonical manuscripts |
-| `tools/` | Pandoc MarkBreak filter + verify |
-| `out/` | Generated Docx / dumps (gitignored) |
+| Path | Contents |
+|------|----------|
+| [VERSION](VERSION) | Version of this profile. Tags use the form `vX.Y.Z`. |
+| [specification.md](specification.md) | Rules for the profile |
+| [index.html](index.html) | Page for markbreak.com |
+| `fixtures/` | Test manuscripts |
+| `tools/` | Pandoc filter and the check |
+| `out/` | Docx files from the check. Git ignores this directory. |
 
-Writer: [markbreak.app](https://markbreak.app) (online editor + desktop). Open the specification in the writer:  
+Open the specification in the writer:
+
 `https://markbreak.app/edit.html?url=https://markbreak.com/specification.md`

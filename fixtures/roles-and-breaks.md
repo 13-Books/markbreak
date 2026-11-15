@@ -17,8 +17,8 @@ Body after the break still belongs to this file’s role.
 
 A second role is a second file with its own YAML `role:`.
 
-//---
+//break
 
 # Still this file
 
-Authoring `//---` MUST become a Docx page break.
+Authoring `//break` MUST become a Docx column break.
