@@ -1,4 +1,4 @@
-# MarkBreak — Specification (0.2.0)
+# MarkBreak — Specification (0.3.0)
 
 **Product:** [MarkBreak](https://markbreak.com) — print manuscript profile for Pandoc Markdown.  
 **Writer:** [markbreak.app](https://markbreak.app) emits this profile; it is not a second dialect.
@@ -16,7 +16,7 @@ This is a **profile** of Pandoc Markdown, not a rival language. See [Why](README
 A book MAY be:
 
 1. **One file** — single `.md` with YAML front matter, or  
-2. **Many files** — chapters concatenated by a build tool in documented order.
+2. **Many files** — the root manuscript lists them in `spine` (§2). The reference filter concatenates that list.
 
 Chapter files SHOULD use a numeric prefix for stable sort (`01-title.md`, `02-genesis.md`).
 
@@ -42,7 +42,7 @@ spine:
 ```
 
 - `role` — print role for **this file** (see §3). One file, one role.
-- `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`.
+- `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`. When `spine` is non-empty, the reference filter concatenates it in one Pandoc pass. Paths are relative to the root manuscript’s directory; absolute paths and `..` fail. A non-empty root body is wrapped with this file’s `role` and comes first. Each entry’s body follows, in list order, as its own role Div (a sibling, not nested in the root Div). An entry’s `role` and that file’s YAML `role` MUST match when both are set; if neither is set, processing fails. A spine file MUST NOT contain its own `spine`. Child YAML MUST NOT replace the root manuscript’s other meta. Flow breaks inside an entry obey §5.
 - Unknown keys MUST be preserved when the underlying Pandoc path preserves them.
 
 ## 3. Roles (semantic structure)
@@ -147,9 +147,10 @@ Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert 
 
 ## 10. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.2.0)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant (0.3.0)** if `bash tools/verify.sh` exits 0 against:
 
 - `fixtures/minimal-pagebreak.md`
 - `fixtures/parts-and-chapters.md`
 - `fixtures/roles-and-breaks.md`
 - `fixtures/break-overrides.md`
+- `fixtures/spine-book/book.md`

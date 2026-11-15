@@ -6,7 +6,8 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 out="$root/out"
 filter="$root/tools/markbreak.lua"
 if [[ ! -f "$filter" ]]; then
-  filter="$root/tools/pagebreak.lua"
+  echo "markbreak.lua not found" >&2
+  exit 1
 fi
 mkdir -p "$out"
 
@@ -42,6 +43,36 @@ PY
 
 role_present() {
   grep -Eq '"role"[[:space:]]*,[[:space:]]*"'"$2"'"' "$1"
+}
+
+top_roles() {
+  "$python" - "$1" <<'PY'
+import json, sys
+doc = json.load(open(sys.argv[1], encoding="utf-8"))
+if isinstance(doc, dict) and "blocks" in doc:
+    blocks = doc["blocks"]
+elif isinstance(doc, list) and len(doc) == 2:
+    blocks = doc[1]
+else:
+    blocks = []
+
+def role_of(attr):
+    if not isinstance(attr, list) or len(attr) < 3:
+        return ""
+    for kv in attr[2]:
+        if isinstance(kv, list) and len(kv) >= 2 and kv[0] == "role":
+            return kv[1]
+    classes = attr[1] if isinstance(attr[1], list) else []
+    return classes[0] if classes else ""
+
+roles = []
+for block in blocks:
+    if isinstance(block, dict) and block.get("t") == "Div":
+        content = block.get("c") or []
+        if content:
+            roles.append(role_of(content[0]))
+print(" ".join(roles))
+PY
 }
 
 failed=0
@@ -100,10 +131,50 @@ check_overrides() {
   fi
 }
 
+check_spine() {
+  local name="spine-book"
+  local src="$root/fixtures/${name}/book.md"
+  local docx="$out/${name}.docx"
+  local json="$out/${name}.json"
+  local expect="toc dedication chapter"
+
+  "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
+  "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
+
+  local count roles
+  count="$(count_re "$docx" 'w:type\s*=\s*"page"')"
+  echo "$name: page breaks = $count (need >= 2)"
+  if (( count < 2 )); then
+    fail "$name page breaks"
+  else
+    ok "$name page breaks"
+  fi
+
+  roles="$(top_roles "$json")"
+  echo "$name: top roles = $roles (need $expect)"
+  if [[ "$roles" == "$expect" ]]; then
+    ok "$name role order"
+  else
+    fail "$name role order"
+  fi
+}
+
+check_spine_mismatch() {
+  local src="$root/fixtures/spine-mismatch/book.md"
+  if "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$out/spine-mismatch.json" \
+      2>"$out/spine-mismatch.err"; then
+    fail "spine-mismatch should have failed"
+  else
+    ok "spine-mismatch rejected"
+  fi
+}
+
 check minimal-pagebreak 1 chapter
 check parts-and-chapters 3 part
 check roles-and-breaks 2 dedication
 check_overrides
+check_spine
+check_spine_mismatch
 
 if (( failed > 0 )); then
   echo "verify FAILED ($failed check(s))"

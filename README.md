@@ -4,7 +4,7 @@
 
 Open dialect: [markbreak.com](https://markbreak.com) · Repo: [13-Books/markbreak](https://github.com/13-Books/markbreak) · Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.2.0](VERSION) (semver — tag as `v0.2.0`)
+**Profile version:** [0.3.0](VERSION) (semver — tag as `v0.3.0`)
 
 ## Why
 
@@ -61,7 +61,7 @@ Plain Markdown is a thin container for meaning ([Rasmus](https://danielwrasmus.s
 ## Success
 
 1. **Specification** — [specification.md](specification.md) authors and agents can obey.
-2. **Roles** — YAML `role:`. One file, one role.
+2. **Roles** — YAML `role:`. One file, one role. A `spine` lists the other files; each file keeps its own role.
 3. **Breaks** — `\newpage` / `//---`; `---` never means page break. Default break = flow advance (page when there are no columns).
 4. **Gate** — `bash tools/verify.sh` fails closed when fixtures lack real Docx page breaks or lose roles.
 5. **Boundary sentence:**  
