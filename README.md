@@ -10,19 +10,31 @@ MarkBreak is a Pandoc Markdown profile for print manuscripts.
 
 ## Purpose
 
-The profile records two facts that standard Markdown does not record.
+Standard Markdown does not record print function or flow breaks.
 
-- The YAML key `role` gives the print function of a file.
-- A heading gives the title level. The heading does not give the print function.
-- Write the normal advance as `//break`.
-- With one column, Word shows `//break` as the next page. With more columns, it is the next column.
-- Write `//break page` to force a page.
-- Write `//break odd` or `//break even` when the page side must be specific.
+- Put the print `role` in the YAML front matter. A heading gives hierarchy only; it does not give the print function.
+- Write the normal advance as `//break` on its own line. With one column, Word shows that as the next page. With more columns, it is the next column.
+- Write `//break page` to force a page. Write `//break odd` or `//break even` when the page side must be specific.
 - `---` is a pause in the scene. Do not use `---` as a page break.
 
-A processor that obeys this profile writes `//break` as a Word column break.
-The Word mark is `w:br` with `w:type="column"`.
-`//break page` uses `w:type="page"`.
+A processor that obeys this profile emits those advances as Word column or page marks. The full rules are in [specification.md](specification.md).
+
+## Roles
+
+One file, one role.
+
+```yaml
+---
+title: "Commit Don't Push"
+role: epilog
+---
+
+# After the gates
+```
+
+A second role is a second file.
+
+## Book shape
 
 The root manuscript names publication facts, layout, and the spine. Each listed file keeps its own `role`.
 
@@ -37,54 +49,39 @@ spine:
 ---
 ```
 
+A file listed in `spine` carries only its own role:
+
+```yaml
+---
+title: "Genesis"
+role: chapter
+---
+```
+
 - `meta.md` holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`.
 - Paths in `meta`, `layout`, and `spine` are relative to the root manuscript. Absolute paths and `..` fail.
 - The layout file holds trim, margins, `fontSize`, and `leading`. A chapter file does not.
 - A file processed alone is its own root and may carry `meta` / `layout`.
 - The writer (`markbreak.app`) copies that page into Docx and PDF. The reference filter rejects bad paths; it does not invent a page size.
 
-Run `bash tools/verify.sh` to check the fixtures.
-The full rules are in [specification.md](specification.md).
-
-## When to use it
-
-Use this profile when you write a book as Markdown files.
-You need each chapter to start on a new page in Word, Relay, or a press PDF.
-
-## Other tools
-
-| Kind | Work |
-|------|------|
-| HTML book generators | Online books from a summary tree |
-| Full authoring engines | Books and notebooks with many outputs |
-| HTML/CSS paginators | Page layout in a browser |
-| General Markdown editors | Editor functions |
-| GFM | Prose for the screen |
-| Pandoc | The conversion program |
-| Relay, Word, InDesign | Layout after this profile |
-
-## Sequence
-
-1. You write the manuscript in Markdown.
-2. The MarkBreak profile supplies the roles and the flow breaks.
-3. Pandoc writes a Docx file.
-4. Relay, Word, InDesign, or a press PDF does the layout.
-5. [markbreak.app](https://markbreak.app) is the writer. The writer emits this profile.
-
-## Checks
-
-1. Obey [specification.md](specification.md).
-2. Put one `role` in the YAML of each file. A `spine` lists the other files. Each listed file keeps its own role.
-3. Write the normal advance as `//break`. Write `//break page` to force a page. Do not use `---` as a page break.
-4. Run `bash tools/verify.sh`. The command fails when a break written in a fixture does not reach Word, or when a role is lost.
-
-MarkBreak is the print manuscript profile. You can check that written roles and breaks survive.
-
-## Run the check
+## Check
 
 ```bash
 bash tools/verify.sh
 ```
+
+The command fails when a break written in a fixture does not reach Word, or when a role is lost. Obey [specification.md](specification.md).
+
+## How it ships
+
+1. You write the manuscript in Markdown.
+2. The MarkBreak profile supplies the roles and the flow breaks.
+3. Pandoc and `tools/markbreak.lua` write a Docx file.
+4. Relay, Word, InDesign, or a press PDF does the layout.
+
+[markbreak.app](https://markbreak.app) is the writer. The writer emits this profile.
+
+MarkBreak is not GFM, not an HTML book generator, and not a layout engine.
 
 ## Files
 
