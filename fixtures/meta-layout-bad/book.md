@@ -1,5 +1,5 @@
 ---
-role: chapter
+role: toc
 meta: meta.md
 layout: ../meta-layout/layout.rig.json
 ---

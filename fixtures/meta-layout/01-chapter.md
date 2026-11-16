@@ -1,7 +1,5 @@
 ---
 role: chapter
-meta: meta.md
-layout: layout.rig.json
 ---
 
 # First chapter

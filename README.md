@@ -6,7 +6,7 @@ MarkBreak is a Pandoc Markdown profile for print manuscripts.
 - Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
 - Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.5.0](VERSION). Tag it `v0.5.0`.
+**Profile version:** [0.5.1](VERSION). Tag it `v0.5.1`.
 
 ## Purpose
 
@@ -24,11 +24,11 @@ A processor that obeys this profile writes `//break` as a Word column break.
 The Word mark is `w:br` with `w:type="column"`.
 `//break page` uses `w:type="page"`.
 
-Front matter names roles, publication facts, and layout:
+The root manuscript names publication facts, layout, and the spine. Each listed file keeps its own `role`.
 
 ```yaml
 ---
-role: chapter
+role: toc
 meta: meta.md
 layout: layout.rig.json
 spine:
@@ -38,8 +38,9 @@ spine:
 ```
 
 - `meta.md` holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`.
-- Paths in `meta`, `layout`, and `spine` are relative to this manuscript. Absolute paths and `..` fail.
-- The layout file holds trim, margins, `fontSize`, and `leading`. The chapter does not.
+- Paths in `meta`, `layout`, and `spine` are relative to the root manuscript. Absolute paths and `..` fail.
+- The layout file holds trim, margins, `fontSize`, and `leading`. A chapter file does not.
+- A file processed alone is its own root and may carry `meta` / `layout`.
 - The writer (`markbreak.app`) copies that page into Docx and PDF. The reference filter rejects bad paths; it does not invent a page size.
 
 Run `bash tools/verify.sh` to check the fixtures.
@@ -49,7 +50,6 @@ The full rules are in [specification.md](specification.md).
 
 Use this profile when you write a book as Markdown files.
 You need each chapter to start on a new page in Word, Relay, or a press PDF.
-You need the check to fail when a page break is missing.
 
 ## Other tools
 
@@ -76,9 +76,9 @@ You need the check to fail when a page break is missing.
 1. Obey [specification.md](specification.md).
 2. Put one `role` in the YAML of each file. A `spine` lists the other files. Each listed file keeps its own role.
 3. Write the normal advance as `//break`. Write `//break page` to force a page. Do not use `---` as a page break.
-4. Run `bash tools/verify.sh`. The command fails when a fixture loses its break. The command also fails when a role is lost.
+4. Run `bash tools/verify.sh`. The command fails when a break written in a fixture does not reach Word, or when a role is lost.
 
-MarkBreak is the print manuscript profile. You can check the roles and the page breaks.
+MarkBreak is the print manuscript profile. You can check that written roles and breaks survive.
 
 ## Run the check
 

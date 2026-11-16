@@ -190,14 +190,15 @@ check_spine_mismatch() {
 
 check_meta_layout() {
   local name="meta-layout"
-  local src="$root/fixtures/${name}/chapter.md"
+  local src="$root/fixtures/${name}/book.md"
   local docx="$out/${name}.docx"
   local json="$out/${name}.json"
+  local expect="toc chapter"
 
   "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
   "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
 
-  local columns
+  local columns roles
   columns="$(count_re "$docx" 'w:type\s*=\s*"column"')"
   echo "$name: column breaks = $columns (need >= 1)"
   if (( columns < 1 )); then
@@ -206,15 +207,17 @@ check_meta_layout() {
     ok "$name column breaks"
   fi
 
-  if role_present "$json" "chapter"; then
-    ok "$name role=chapter"
+  roles="$(top_roles "$json")"
+  echo "$name: top roles = $roles (need $expect)"
+  if [[ "$roles" == "$expect" ]]; then
+    ok "$name role order"
   else
-    fail "$name missing role=chapter in AST"
+    fail "$name role order"
   fi
 }
 
 check_meta_layout_bad() {
-  local src="$root/fixtures/meta-layout-bad/chapter.md"
+  local src="$root/fixtures/meta-layout-bad/book.md"
   if "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$out/meta-layout-bad.json" \
       2>"$out/meta-layout-bad.err"; then
     fail "meta-layout-bad should have failed"
