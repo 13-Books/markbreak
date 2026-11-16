@@ -69,6 +69,18 @@ local function emit_break(format, kind)
       return pandoc.RawBlock('tex',
         '\\clearpage\\ifodd\\c@page\\hbox{}\\newpage\\fi')
     end
+  elseif format == 'icml' then
+    -- InDesign Place(ICML): Br type is the hard break InCopy understands.
+    local br =
+      (kind == 'column' and 'nextColumn') or
+      (kind == 'odd' and 'nextOddPage') or
+      (kind == 'even' and 'nextEvenPage') or
+      'nextPage'
+    return pandoc.RawBlock('icml',
+      '<ParagraphStyleRange AppliedParagraphStyle="ParagraphStyle/Paragraph">' ..
+      '<CharacterStyleRange AppliedCharacterStyle="$ID/NormalCharacterStyle">' ..
+      '<Br type="' .. br .. '" />' ..
+      '</CharacterStyleRange></ParagraphStyleRange>')
   else
     return pandoc.Para{pandoc.Str '\f'}
   end
@@ -97,6 +109,23 @@ local function role_name(value)
 end
 
 local function role_div(blocks, role)
+  -- ICML ignores Div attrs; stamp ParagraphStyle/{role} onto body paragraphs.
+  if FORMAT == 'icml' then
+    local out = pandoc.List()
+    for _, block in ipairs(blocks) do
+      if block.t == 'Para' then
+        local frag = pandoc.write(pandoc.Pandoc({ block }), 'icml')
+        frag = frag:gsub(
+          'AppliedParagraphStyle="ParagraphStyle/Paragraph"',
+          'AppliedParagraphStyle="ParagraphStyle/' .. role .. '"',
+          1)
+        out:insert(pandoc.RawBlock('icml', frag))
+      else
+        out:insert(block)
+      end
+    end
+    return pandoc.Div(out, pandoc.Attr('', { role }, { role = role }))
+  end
   return pandoc.Div(blocks, pandoc.Attr('', { role }, { role = role }))
 end
 
