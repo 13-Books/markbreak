@@ -22,6 +22,8 @@ The profile records two facts that standard Markdown does not record.
 A processor that obeys this profile writes `//break` as a Word column break.
 The Word mark is `w:br` with `w:type="column"`.
 `//break page` uses `w:type="page"`.
+`meta` names the publication file. `layout` names the RigWorks page.
+Export writes that page into Docx and PDF.
 Run `bash tools/verify.sh` to check the fixtures.
 The full rules are in [specification.md](specification.md).
 

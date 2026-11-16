@@ -9,7 +9,7 @@
 
 This is a **profile** of Pandoc Markdown, not a rival language. See [Purpose](README.md#Purpose).
 
-**RigWorks:** Portable meaning uses `rig.media.code` + `rig.story.flow.role` + `rig.story.paragraph.breakType`. See [rig.works](http://www.rig.works/) and example `markbreak-chapter.json`.
+**RigWorks:** Portable meaning uses `rig.media.code`, `rig.story.flow` `role`, and `rig.story.paragraph` `breakType`. Publication facts live in `meta.md`. Trim, margins, and type size live in the RigWorks layout file named by `layout`. The chapter does not carry them. The writer copies that page into Docx and PDF. See [rig.works](http://www.rig.works/) and example `fixtures/markbreak-chapter.rig.json`.
 
 ## 1. File shape
 
@@ -28,12 +28,9 @@ Recommended keys:
 
 ```yaml
 ---
-title: "Commit Don't Push"
-subtitle: "Gates over Gospel"
-author: "Author Name"
-rights: "All rights reserved"
-lang: en-US
 role: chapter
+meta: meta.md
+layout: layout.rig.json
 spine:
   - { file: "00-dedication.md", role: dedication }
   - { file: "01-genesis.md", role: chapter }
@@ -41,7 +38,22 @@ spine:
 ---
 ```
 
-- `role` — print role for **this file** (see §3). One file, one role.
+`meta.md` holds the publication record. Its body may be empty.
+
+```yaml
+---
+title: "Commit Don't Push"
+subtitle: "Gates over Gospel"
+author: "Author Name"
+language: en
+isbn13: "9780000000002"
+publisher: "Press Name"
+---
+```
+
+- `role` — print role for **this file** (see §3). One file, one role. The JSON field is `rig.story.flow` `role`.
+- `meta` — optional path to the publication file, relative to this manuscript. Absolute paths and `..` fail. That file holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`. It does not hold margins or type size.
+- `layout` — optional path to a RigWorks layout document, relative to this manuscript. Absolute paths and `..` fail. The page there holds trim and margins. A paragraph style there holds `fontSize` and `leading`. No layout file means the export does not invent a page size.
 - `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`. When `spine` is non-empty, the reference filter concatenates it in one Pandoc pass. Paths are relative to the root manuscript’s directory; absolute paths and `..` fail. A non-empty root body is wrapped with this file’s `role` and comes first. Each entry’s body follows, in list order, as its own role Div (a sibling, not nested in the root Div). An entry’s `role` and that file’s YAML `role` MUST match when both are set; if neither is set, processing fails. A spine file MUST NOT contain its own `spine`. Child YAML MUST NOT replace the root manuscript’s other meta. Flow breaks inside an entry obey §5.
 - Unknown keys MUST be preserved when the underlying Pandoc path preserves them.
 
