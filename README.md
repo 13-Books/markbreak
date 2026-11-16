@@ -6,7 +6,7 @@ MarkBreak is a Pandoc Markdown profile for print manuscripts.
 - Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
 - Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.4.0](VERSION). Tag it `v0.4.0`.
+**Profile version:** [0.5.0](VERSION). Tag it `v0.5.0`.
 
 ## Purpose
 
@@ -17,13 +17,31 @@ The profile records two facts that standard Markdown does not record.
 - Write the normal advance as `//break`.
 - With one column, Word shows `//break` as the next page. With more columns, it is the next column.
 - Write `//break page` to force a page.
+- Write `//break odd` or `//break even` when the page side must be specific.
 - `---` is a pause in the scene. Do not use `---` as a page break.
 
 A processor that obeys this profile writes `//break` as a Word column break.
 The Word mark is `w:br` with `w:type="column"`.
 `//break page` uses `w:type="page"`.
-`meta` names the publication file. `layout` names the RigWorks page.
-Export writes that page into Docx and PDF.
+
+Front matter names roles, publication facts, and layout:
+
+```yaml
+---
+role: chapter
+meta: meta.md
+layout: layout.rig.json
+spine:
+  - { file: "00-dedication.md", role: dedication }
+  - { file: "01-genesis.md", role: chapter }
+---
+```
+
+- `meta.md` holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`.
+- Paths in `meta`, `layout`, and `spine` are relative to this manuscript. Absolute paths and `..` fail.
+- The layout file holds trim, margins, `fontSize`, and `leading`. The chapter does not.
+- The writer (`markbreak.app`) copies that page into Docx and PDF. The reference filter rejects bad paths; it does not invent a page size.
+
 Run `bash tools/verify.sh` to check the fixtures.
 The full rules are in [specification.md](specification.md).
 

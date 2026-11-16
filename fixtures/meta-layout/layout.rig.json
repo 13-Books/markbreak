@@ -1,0 +1,32 @@
+{
+  "rig": "1.5.0",
+  "document": {
+    "title": "Trade 6×9",
+    "defaultUnit": "mm"
+  },
+  "entities": [
+    {
+      "id": "page-trade",
+      "components": {
+        "rig.meta.named": { "name": "Trade 6×9", "stableId": "page-trade" },
+        "rig.layout.page": {
+          "index": 0,
+          "width": 152.4,
+          "height": 228.6,
+          "unit": "mm",
+          "margins": [20, 18, 22, 18]
+        }
+      }
+    },
+    {
+      "id": "style-paragraph",
+      "components": {
+        "rig.meta.named": { "name": "Paragraph", "stableId": "style-paragraph" },
+        "rig.story.paragraph_style": {
+          "fontSize": 11,
+          "leading": 14
+        }
+      }
+    }
+  ]
+}

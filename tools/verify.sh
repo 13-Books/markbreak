@@ -188,12 +188,49 @@ check_spine_mismatch() {
   fi
 }
 
+check_meta_layout() {
+  local name="meta-layout"
+  local src="$root/fixtures/${name}/chapter.md"
+  local docx="$out/${name}.docx"
+  local json="$out/${name}.json"
+
+  "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
+  "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
+
+  local columns
+  columns="$(count_re "$docx" 'w:type\s*=\s*"column"')"
+  echo "$name: column breaks = $columns (need >= 1)"
+  if (( columns < 1 )); then
+    fail "$name column breaks"
+  else
+    ok "$name column breaks"
+  fi
+
+  if role_present "$json" "chapter"; then
+    ok "$name role=chapter"
+  else
+    fail "$name missing role=chapter in AST"
+  fi
+}
+
+check_meta_layout_bad() {
+  local src="$root/fixtures/meta-layout-bad/chapter.md"
+  if "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$out/meta-layout-bad.json" \
+      2>"$out/meta-layout-bad.err"; then
+    fail "meta-layout-bad should have failed"
+  else
+    ok "meta-layout-bad rejected"
+  fi
+}
+
 check minimal-pagebreak 1 chapter
 check parts-and-chapters 3 part
 check roles-and-breaks 1 dedication 1
 check_overrides
 check_spine
 check_spine_mismatch
+check_meta_layout
+check_meta_layout_bad
 
 if (( failed > 0 )); then
   echo "verify FAILED ($failed check(s))"

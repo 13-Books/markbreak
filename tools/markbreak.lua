@@ -123,22 +123,40 @@ local function manuscript_dir()
   return dir
 end
 
-local function spine_path(base, rel)
+-- Reject absolute paths and '..'. Keys stay in the manuscript tree.
+local function require_relative_path(kind, rel)
   if not rel or rel == '' then
-    error('MarkBreak spine entry missing file')
+    error('MarkBreak ' .. kind .. ' path missing')
   end
   if rel:match('^[/\\]') or rel:match('^%a:[/\\]') then
-    error('MarkBreak spine path must stay in the manuscript directory: ' .. rel)
+    error('MarkBreak ' .. kind .. ' path must stay in the manuscript directory: ' .. rel)
   end
   for seg in rel:gmatch('[^/\\]+') do
     if seg == '..' then
-      error('MarkBreak spine path must stay in the manuscript directory: ' .. rel)
+      error('MarkBreak ' .. kind .. ' path must stay in the manuscript directory: ' .. rel)
     end
   end
+  return rel
+end
+
+local function spine_path(base, rel)
+  require_relative_path('spine', rel)
   if base == '.' then
     return rel
   end
   return base .. '/' .. rel
+end
+
+-- Validate meta/layout paths; preserve the keys. Layout rendering is the writer's job.
+local function validate_path_keys(meta)
+  local meta_path = role_name(meta.meta)
+  if meta_path then
+    require_relative_path('meta', meta_path)
+  end
+  local layout_path = role_name(meta.layout)
+  if layout_path then
+    require_relative_path('layout', layout_path)
+  end
 end
 
 local function read_manuscript(path)
@@ -185,6 +203,7 @@ end
 
 function Meta(meta)
   role_from_meta = role_name(meta.role)
+  validate_path_keys(meta)
   return meta
 end
 
