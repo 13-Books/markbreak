@@ -1,4 +1,4 @@
-# MarkBreak — Specification (0.5.1)
+# MarkBreak — Specification (0.5.2)
 
 **Product:** [MarkBreak](https://markbreak.com) — print manuscript profile for Pandoc Markdown.  
 **Writer:** [markbreak.app](https://markbreak.app) emits this profile; it is not a second dialect.
@@ -177,7 +177,7 @@ Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert 
 
 ## 10. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.5.1)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant (0.5.2)** if `bash tools/verify.sh` exits 0 against:
 
 - `fixtures/minimal-pagebreak.md`
 - `fixtures/parts-and-chapters.md`

@@ -6,7 +6,7 @@ MarkBreak is a Pandoc Markdown profile for print manuscripts.
 - Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
 - Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.5.1](VERSION). Tag it `v0.5.1`.
+**Profile version:** [0.5.2](VERSION). Tag it `v0.5.2`.
 
 ## Purpose
 
