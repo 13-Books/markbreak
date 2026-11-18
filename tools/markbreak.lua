@@ -126,6 +126,20 @@ local function role_div(blocks, role)
     end
     return pandoc.Div(out, pandoc.Attr('', { role }, { role = role }))
   end
+  -- Docx: a leading empty paragraph with custom style "Role <role>" so import
+  -- can recover front-matter role: (mammoth style map → role-*).
+  if FORMAT == 'docx' then
+    local style = 'Role ' .. role
+    local marker = pandoc.RawBlock(
+      'openxml',
+      '<w:p><w:pPr><w:pStyle w:val="' .. style .. '"/></w:pPr><w:r><w:t></w:t></w:r></w:p>'
+    )
+    local out = pandoc.List({ marker })
+    for _, block in ipairs(blocks) do
+      out:insert(block)
+    end
+    return pandoc.Div(out, pandoc.Attr('', { role }, { role = role }))
+  end
   return pandoc.Div(blocks, pandoc.Attr('', { role }, { role = role }))
 end
 
@@ -228,6 +242,19 @@ local function spine_entries(meta)
     table.insert(entries, { file = file, role = role_name(item.role) })
   end
   return entries
+end
+
+-- Stamp the manuscript-relative path into the image title so Docx descr
+-- survives as `original:<path>` and import can re-link the art file.
+function Image(img)
+  local src = img.src
+  if not src or src == '' then return img end
+  if src:match('^https?://') or src:match('^data:') then return img end
+  if src:match('^original:') then return img end
+  local title = img.title or ''
+  if title:match('original:') then return img end
+  img.title = 'original:' .. src .. (title ~= '' and ('|' .. title) or '')
+  return img
 end
 
 function Meta(meta)
