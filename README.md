@@ -19,6 +19,19 @@ Standard Markdown does not record print function or flow breaks.
 
 A processor that obeys this profile emits those advances as Word column or page marks. The full rules are in [specification.md](specification.md).
 
+## The name
+
+MarkBreak is **Mark** + **Break**, and both halves earn their place.
+
+- **Mark** — Markdown, and the older sense of the word: an author's mark on a manuscript. *This is a chapter. This file is the epilog. Start here.*
+- **Break** — `//break` on its own line: the flow break standard Markdown never records, so a manuscript could not say, in plain text, *turn the page*.
+
+And yes, we break convention a little. On purpose, and only where the convention loses information — where `---` has to double as a page break, where a heading has to guess a file's print role, or where “new page” exists only as a button once pressed inside one app and forgotten by the file itself.
+
+Everything that already works stays unbroken. It is still Pandoc Markdown, still plain text a human can read, and `---` still means a pause in the scene. The break is small. The point is that the manuscript, not the app, gets to say it.
+
+Praised, in that spirit, by [Plain Text Humans](https://plaintexthumans.com).
+
 ## Roles
 
 One file, one role.
