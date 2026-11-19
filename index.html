@@ -169,6 +169,14 @@ role: epilog
     </section>
 
     <section>
+      <h2>Calculations</h2>
+      <p>A table cell that starts with <code>=</code> calculates; every other cell is a literal. <code>C2</code> is column 2 on the same row, <code>@Qty</code> names a column by its header, and <code>@Qty@Pears</code> names the row by its first cell too.</p>
+      <pre><code>| Item | Qty | Price | Line total |
+| Apples | 2 | 3 | =C2*C3 |</code></pre>
+      <p>Readers see only the results — an ordinary column of numbers. The formula stays hidden in the cell, and a <code>(hidden)</code> header hides a helper column entirely.</p>
+    </section>
+
+    <section>
       <h2>The check</h2>
       <p>When you write <code>//break</code>, this fails if Word does not receive that break. Manuscripts are not required to include breaks.</p>
       <pre><code>bash tools/verify.sh</code></pre>

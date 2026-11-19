@@ -226,6 +226,88 @@ check_meta_layout_bad() {
   fi
 }
 
+check_table_calculations() {
+  local name="table-calculations"
+  local src="$root/fixtures/${name}.md"
+  local docx="$out/${name}.docx"
+  local json="$out/${name}.json"
+
+  "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
+  "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
+
+  if "$python" - "$docx" <<'PY'
+import sys, zipfile
+import xml.etree.ElementTree as ET
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+with zipfile.ZipFile(sys.argv[1]) as z:
+    root = ET.fromstring(z.read("word/document.xml"))
+
+def run_text(run, hidden):
+    rpr = run.find(f"{W}rPr")
+    vanish = rpr is not None and rpr.find(f"{W}vanish") is not None
+    if vanish != hidden:
+        return ""
+    return "".join(t.text or "" for t in run.iter(f"{W}t"))
+
+def cells(row, hidden=False):
+    return ["".join(run_text(r, hidden) for r in tc.iter(f"{W}r")).strip()
+            for tc in row.findall(f"{W}tc")]
+
+tables = [[cells(tr) for tr in tbl.findall(f"{W}tr")]
+          for tbl in root.iter(f"{W}tbl")]
+hidden = [[cells(tr, hidden=True) for tr in tbl.findall(f"{W}tr")]
+          for tbl in root.iter(f"{W}tbl")]
+
+expected_first = [
+    ["Item", "Qty", "Pack price", "Line total"],
+    ["Apples", "2", "3", "60"],
+    ["Pears", "4", "5", "40"],
+    ["Total", "6", "4", "100"],
+]
+assert tables[0] == expected_first, f"first table: {tables[0]!r}"
+
+second = {row[0]: row[1] for row in tables[1][1:] if len(row) == 2}
+expected_second = {
+    "Smallest": "2", "Largest": "6", "Counted": "3", "Product": "48",
+    "Specific": "720", "Percent": "1", "Literal": "C2R2*180",
+    "Escaped": "=C2R2", "Broken": "#DIV/0!", "Missing": "#REF!",
+}
+for key, value in expected_second.items():
+    assert second.get(key) == value, f"{key}: {second.get(key)!r} != {value!r}"
+
+named = {row[0]: row[1] for row in tables[2][1:] if len(row) == 3}
+expected_named = {
+    "Cherry picking": "4", "Copied": "4", "Named cell": "6",
+    "By number": "5", "Row sum": "9", "Row range": "14",
+}
+for key, value in expected_named.items():
+    assert named.get(key) == value, f"named {key}: {named.get(key)!r} != {value!r}"
+
+assert tables[3][1] == ["#CYCLE!", "#CYCLE!"], f"cycle table: {tables[3]!r}"
+
+visible = [cell for table in tables for row in table for cell in row]
+assert "Factor" not in visible, "hidden helper column leaked into Docx"
+assert not any(cell.startswith("=") and cell != "=C2R2" for cell in visible), \
+    f"formula leaked into visible text: {visible!r}"
+hidden_flat = [cell for table in hidden for row in table for cell in row if cell]
+assert "=C2*C3*C4" in hidden_flat, f"hidden formulas: {hidden_flat!r}"
+assert "=SUM(C5R1:C5R2)" in hidden_flat, f"hidden formulas: {hidden_flat!r}"
+print("table-calculations: Docx values, errors, hidden column and formulas OK")
+PY
+  then
+    ok "$name Docx calculations"
+  else
+    fail "$name Docx calculations"
+  fi
+
+  if grep -Fq '"data-calc"' "$json"; then
+    ok "$name data-calc in AST"
+  else
+    fail "$name missing data-calc in AST"
+  fi
+}
+
 check minimal-pagebreak 1 chapter
 check parts-and-chapters 3 part
 check roles-and-breaks 1 dedication 1
@@ -234,6 +316,7 @@ check_spine
 check_spine_mismatch
 check_meta_layout
 check_meta_layout_bad
+check_table_calculations
 
 if (( failed > 0 )); then
   echo "verify FAILED ($failed check(s))"

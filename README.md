@@ -6,7 +6,7 @@ MarkBreak is a Pandoc Markdown profile for print manuscripts.
 - Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
 - Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.5.2](VERSION). Tag it `v0.5.2`.
+**Profile version:** [0.6.0](VERSION). Tag it `v0.6.0`.
 
 ## Purpose
 
@@ -46,6 +46,20 @@ role: epilog
 ```
 
 A second role is a second file.
+
+## Tables that calculate
+
+A cell that starts with `=` is a calculation; every other cell is a literal. References are column-then-row: `C2` is column 2 on the same row, `C2R4` is column 2, row 4, and `@Qty` names a column by its header. Rows are named by their first cell too, so `@Qty@Pears` is the Qty cell on the Pears row and `SUM(@Pears)` totals that row — no counting in either direction.
+
+```markdown
+| Item | Qty | Price | Line total |
+|------|-----|-------|------------|
+| Apples | 2 | 3 | =C2*C3 |
+| Pears | 4 | 5 | =@Qty*@Price |
+| Total | =SUM(C2R1:C2R2) | | =SUM(C4R1:C4R2) |
+```
+
+The export shows only the results — to a reader it is an ordinary extra column. The formula stays hidden in the cell (`data-calc`, and hidden text in Docx) so it can round-trip. A header ending in `(hidden)` makes a helper column that formulas can use but readers never see. The full rules, functions (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `PRODUCT`), and error values (`#DIV/0!`, `#REF!`, `#CYCLE!`, …) are in [specification.md](specification.md) §8.
 
 ## Book shape
 
