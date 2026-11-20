@@ -113,7 +113,6 @@
       font-size: 0.875rem;
     }
     footer a { color: var(--type); }
-    footer .meta { margin: 0.35rem 0 0; }
     @media (max-width: 900px) {
       header.top { grid-template-columns: 1fr; gap: 1rem; }
     }
@@ -123,7 +122,7 @@
   <header class="top">
     <h1 class="brand">MarkBreak</h1>
     <div class="intro">
-      <p>Plain-text manuscripts for print. Roles in YAML. Hard breaks in the file. We break convention a little — where convention loses the page.</p>
+      <p>Plain-text manuscripts for printed matter. File Roles in YAML. Hard breaks in the source. We break convention — but only where convention loses the page.</p>
       <div class="links">
         <a href="specification.md">Specification ↗</a>
         <a href="https://github.com/13-Books/markbreak">GitHub ↗</a>
@@ -134,27 +133,28 @@
   <main>
     <section class="block roles" id="roles">
       <h2>Roles</h2>
-      <p>One file, one role. Put <code>role</code> in the YAML. A second role is a second file.</p>
+      <p>One file, one role.</p>
       <pre><code>---
 title: "Commit Don't Push"
 role: epilog
 ---
 
-# After the gates</code></pre>
+# A Fresh Start</code></pre>
     </section>
 
     <section class="block tables" id="tables">
       <h2>Tables that calculate</h2>
       <p>A cell that starts with <code>=</code> calculates. Readers see only the results.</p>
-      <pre><code>| Item | Qty | Price | Line total |
-| Apples | 2 | 3 | =C2*C3 |
-| Pears | 4 | 5 | =@Qty*@Price |</code></pre>
+      <pre><code>| Item   | Qty | Price | Line total   |
+|--------|-----|-------|--------------|
+| Apples |   2 |     3 |       =B2*C2 |
+| Pears  |   4 |     5 | =@Qty*@Price |</code></pre>
     </section>
 
     <section class="block breaks" id="breaks">
       <h2>Breaks</h2>
-      <p><code>//break</code> advances the story. With one column, that is the next page. <code>//break page</code> forces a page. <code>---</code> or <code>***</code> is a pause in the scene.</p>
-      <p>Use <code>//break odd</code> or <code>//break even</code> when the page side must be specific.</p>
+      <p><code>* * *</code> is a pause in the scene. <code>//break</code> advances the story one column at a time. <code>//break page</code> forces a turn.</p>
+      <p>Use <code>//break odd</code> or <code>//break even</code> for even more control.</p>
     </section>
 
     <section class="block csv" id="csv">
@@ -167,7 +167,6 @@ role: epilog
 
   <footer>
     <p class="copy">© 2026 <a href="https://plaintexthumans.com">Plain Text Humans</a></p>
-    <p class="meta"><a href="LICENSE">MIT</a></p>
   </footer>
 </body>
 </html>
