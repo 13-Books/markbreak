@@ -1,55 +1,77 @@
-# MarkBreak — Specification (0.7.0)
+# MarkBreak
 
-**Product:** [MarkBreak](https://markbreak.com) — plain-text manuscript format for print (roles, flow breaks, tables that calculate), still Pandoc Markdown.  
-**Writer:** [markbreak.app](https://markbreak.app) emits MarkBreak; it is not a second dialect.
+**Version 0.7.0.**
 
-**Why:** Print authors need an enforceable Markdown contract for **roles**, **flow breaks**, and **tables that calculate** — including CSV from the start.
+MarkBreak is a profile of [Pandoc Markdown](https://pandoc.org/MANUAL.html#pandocs-markdown). A MarkBreak document is a Pandoc Markdown document. This profile adds print roles, a spine of files, a publication file, a layout file, flow breaks, and tables that calculate. A construct this profile does not define stays Pandoc Markdown.
 
-**Normative intent:** a MarkBreak manuscript MUST round-trip through Pandoc to Docx with hard flow breaks intact, SHOULD carry YAML `role` into the Pandoc AST, and SHOULD remain readable as ordinary Markdown where unknown lines are ignored. CSV table files MUST accept the same calculation dialect as Markdown tables (§8).
+The words MUST, MUST NOT, REQUIRED, SHALL, SHALL NOT, SHOULD, SHOULD NOT, RECOMMENDED, MAY, and OPTIONAL in this document are to be interpreted as in [RFC 2119](https://datatracker.ietf.org/doc/html/rfc2119).
 
-This is Pandoc Markdown with a print contract, not a rival language. See [Purpose](README.md#Purpose).
+## 1. Preliminaries
 
-**RigWorks:** Portable meaning uses `rig.media.code`, `rig.story.flow` `role`, and `rig.story.paragraph` `breakType`. Publication facts live in `meta.md`. Trim, margins, and type size live in the RigWorks layout file named by `layout`. The chapter does not carry them. The writer (`markbreak.app`) copies that page into Docx and PDF. The reference filter rejects absolute and `..` paths for `meta`, `layout`, and `spine`; it does not invent a page size or render the layout. See [rig.works](http://www.rig.works/) and example `fixtures/markbreak-chapter.rig.json`.
+### 1.1 Lines
 
-## 1. File shape
+A **line** ends at a line feed (U+000A) or at the end of the file. A **blank line** contains no characters, or only spaces (U+0020) and tabs (U+0009).
 
-A book MAY be:
+### 1.2 Manuscripts
 
-1. **One file** — a single `.md` with YAML front matter, or a single `.csv` table (§8.6), or  
-2. **Many files** — the root manuscript lists them in `spine` (§2). The reference filter concatenates that list. Spine entries MAY be `.md` or `.csv`.
+A **manuscript** is one Markdown file, or one CSV file given alone as the root input (§8.6).
 
-Chapter Markdown files SHOULD use a numeric prefix for stable sort (`01-title.md`, `02-genesis.md`). CSV table files SHOULD use a clear name (`prices.csv`, `inventory.csv`).
+The **root manuscript** is the file given to a processor. A file processed on its own is its own root.
 
-## 2. Front matter (YAML-first)
+A **book** is the root manuscript together with the files named in its spine, when it has one. A spine entry may be Markdown or CSV (§5, §8.6).
 
-YAML front matter MUST be valid YAML between `---` fences at the start of the root manuscript (or root concat output).
+Markdown files of a book SHOULD use a numeric prefix so a directory listing matches reading order (`01-title.md`, `02-genesis.md`). CSV files SHOULD use a clear name (`prices.csv`). The name is a filing habit. The spine is the order.
 
-Recommended keys on the **root** manuscript:
+### 1.3 Paths
 
-```yaml
----
-role: toc
-meta: meta.md
-layout: layout.rig.json
-spine:
-  - { file: "00-dedication.md", role: dedication }
-  - { file: "01-genesis.md", role: chapter }
-  - { file: "99-epilog.md", role: epilog }
----
-```
+A path in `meta`, `layout`, or a spine `file` is relative to the directory that contains the root manuscript.
 
-A file listed in `spine` (or any single chapter file) carries only its own role:
+A processor MUST reject a path that is absolute or that contains a `..` segment. A path is absolute when it begins with `/` or `\`, or with a drive letter, `:`, and then `/` or `\`.
 
-```yaml
----
-title: "Genesis"
-role: chapter
----
-```
+A spine `file` MUST name a readable file. Otherwise processing MUST fail.
 
-`meta.md` holds the publication record. Its body may be empty.
+### 1.4 Processors
 
-```yaml
+A **processor** reads a manuscript and produces an output.
+
+The **reference filter** is `tools/markbreak.lua`. It checks the paths in §1.3, resolves roles and the spine, applies table calculations (§8), and emits flow breaks. It does not open the publication file or the layout file. It does not invent a page size.
+
+A **writer** MAY read those files and apply them when it produces Docx or PDF.
+
+Docx conformance is defined in §11.
+
+## 2. Metadata
+
+### 2.1 Front matter
+
+A Markdown manuscript MAY begin with Pandoc YAML metadata: a line containing only `---`, a YAML mapping, and a closing line containing only `---` or `...`. The YAML MUST parse.
+
+The root manuscript's metadata is the metadata of the book. A CSV file has no front matter (§8.6).
+
+### 2.2 Keys
+
+This profile defines four keys.
+
+| Key | Allowed on | Section |
+|-----|------------|---------|
+| `role` | any Markdown manuscript | §3 |
+| `meta` | the root manuscript | §2.3 |
+| `layout` | the root manuscript | §2.4 |
+| `spine` | the root manuscript | §5 |
+
+A key this profile does not define MUST be left as Pandoc delivered it. A processor MUST NOT give such a key a meaning of its own.
+
+A file named in `spine` MUST NOT itself contain `spine`. Processing MUST fail if it does. Other keys on that file, such as `title`, are allowed. They MUST NOT replace the root manuscript's metadata.
+
+### 2.3 Publication file
+
+`meta` is the path of the **publication file**. That file is Markdown with YAML front matter. Its body MAY be empty.
+
+The publication facts are `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`. Trim, margins, type size, and leading are not publication facts.
+
+**Example 1.** A publication file.
+
+````markdown
 ---
 title: "Commit Don't Push"
 subtitle: "Gates over Gospel"
@@ -58,135 +80,286 @@ language: en
 isbn13: "9780000000002"
 publisher: "Press Name"
 ---
-```
+````
 
-A file processed on its own is its own root and may carry `meta` / `layout`. A file listed in a `spine` carries only `role` and MUST NOT carry its own `spine`.
+The reference filter checks the path and leaves the keys where they are. A writer MAY copy them into an output.
 
-- `role` — print role for **this file** (see §3). One file, one role. The JSON field is `rig.story.flow` `role`.
-- `meta` — optional path to the publication file, relative to the root manuscript. Absolute paths and `..` fail (reference filter). That file holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`. It does not hold margins or type size.
-- `layout` — optional path to a RigWorks layout document, relative to the root manuscript. Absolute paths and `..` fail (reference filter). The page there holds trim and margins. A paragraph style there holds `fontSize` and `leading`. No layout file means the writer does not invent a page size. Copying that page into Docx and PDF is the writer’s job, not the reference filter’s.
-- `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`. When `spine` is non-empty, the reference filter concatenates it in one Pandoc pass. Paths are relative to the root manuscript’s directory; absolute paths and `..` fail. A non-empty root body is wrapped with this file’s `role` and comes first. Each entry’s body follows, in list order, as its own role Div (a sibling, not nested in the root Div). An entry’s `role` and that file’s YAML `role` MUST match when both are set; if neither is set, processing fails. A `.csv` spine entry has no YAML; its `role` MUST come from the spine entry. A spine file MUST NOT contain its own `spine`. Child YAML MUST NOT replace the root manuscript’s other meta. Flow breaks inside Markdown entries obey §5. CSV entries have no flow breaks (§8.6).
-- Unknown keys MUST be preserved when the underlying Pandoc path preserves them.
+### 2.4 Layout file
 
-## 3. Roles (semantic structure)
+`layout` is the path of the **layout file**.
 
-Markdown headings alone do not say *why* a block exists. MarkBreak labels print roles in YAML.
+The layout file holds the page and the body type. The page is the trim and the margins. The body type is the type size and the leading. A chapter manuscript does not carry those values.
 
-### 3.1 Closed vocabulary
+If `layout` is absent, a processor MUST NOT invent a page size.
 
-`dedication` · `epigraph` · `preface` · `part` · `chapter` · `appendix` · `epilog` · `afterword` · `colophon` · `toc` (optional stub)
+The reference filter checks the path. It does not read the file. A writer MAY apply the page and the body type when it writes Docx or PDF.
 
-Unknown `role` values: processors MUST preserve them and MUST NOT invent layout.
+Appendix A names one format a writer may find there. That format is not part of this profile.
 
-### 3.2 Export
+## 3. Roles
 
-Compliant processors MUST expose each known file-level `role` as a Pandoc Div (or equivalent) with attribute/class `role=<value>` wrapping that file’s body (or the spine entry’s body after concat).
+### 3.1 What a role is
 
-## 4. Structure (headings)
+`role` is one scalar string: the print function of that manuscript. A manuscript has at most one role.
 
-| Level | Role |
-|-------|------|
-| `#` | Book title (at most one near the start) OR part / book division |
+Heading level and role are different facts. Heading level is the outline. Role is the function of the file. A processor MUST NOT infer a role from a heading. A processor MUST NOT infer a heading level from a role.
+
+### 3.2 Vocabulary
+
+The known roles are these strings, matched exactly:
+
+`dedication` · `epigraph` · `preface` · `part` · `chapter` · `appendix` · `epilog` · `afterword` · `colophon` · `toc`
+
+`toc` marks a contents file. This profile does not require a processor to build a table of contents.
+
+### 3.3 Values outside the vocabulary
+
+A `role` other than the strings in §3.2 MUST be kept as written. A processor MUST NOT invent layout from it.
+
+### 3.4 In the output
+
+When a manuscript has a role, a processor MUST wrap that manuscript's body in a Pandoc `Div` whose class is the role and whose attribute `role` is the role.
+
+In a book with a spine, each file's `Div` is a sibling. A later file is not nested inside an earlier one.
+
+**Example 2.** One file, one role.
+
+````markdown
+---
+title: "Commit Don't Push"
+role: epilog
+---
+
+# After the gates
+````
+
+The body is a `Div` with `role=epilog`. A second role is a second file.
+
+The `Div` is the required representation. On formats that drop `Div` attributes, the role still has to be recoverable. The reference filter writes an empty Docx paragraph with the paragraph style `Role <role>`. Other recoveries are described in Appendix B.
+
+## 4. Headings
+
+Headings are Pandoc Markdown headings. Authors use the levels as follows.
+
+| Level | Use |
+|-------|-----|
+| `#` | Book title, at most one near the start, or a part |
 | `##` | Chapter |
 | `###` | Section within a chapter |
-| `####`+ | Optional finer structure; print styles MAY collapse them |
+| `####` and below | Finer structure. A print style MAY collapse these levels. |
 
-Parts SHOULD be titled like `# Book I - Genesis` or `# Part I - The wound`.
+A part title SHOULD look like `# Book I - Genesis` or `# Part I - The wound`.
 
-Heading level is hierarchy. YAML `role` is **semantic**. They cooperate; neither replaces the other.
+This table is a convention for authors. It does not change §3. A processor MUST NOT read a role off a heading level.
 
-## 5. Flow breaks (the load-bearing rule)
+## 5. Spine
 
-A **flow break** advances the story. In a layout with **no columns**, that is a **page break**. If fulfillment uses columns, the same default break advances to the next column/frame of flow. Authors only name a break type when they need a different advance.
+`spine` is an ordered list of files. Each entry is a mapping:
 
-There is **no** distinct `frame` break token — the default break *is* frame-advance unless overridden.
+| Field | Required | Meaning |
+|-------|----------|---------|
+| `file` | yes | path of the file, under the rules in §1.3 |
+| `role` | no | role of that file; SHOULD be set |
 
-### 5.1 Default
+An entry that is not a mapping, or a mapping with no `file`, MUST fail processing.
 
-On its own line, surrounded by blank lines:
+When `spine` is absent or empty, the book is the root manuscript alone.
 
-```markdown
+When `spine` is not empty, a processor MUST produce one document, in this order:
+
+1. The root body, if it is not empty. When the root manuscript has a role, that body is wrapped in the root role. When it has no role, the body is included as it stands.
+2. Each spine entry, in list order. Markdown entries are parsed as Markdown; their flow breaks follow §6. CSV entries are read as tables (§8.6). Each entry's body is wrapped in one role `Div`.
+
+The role of an entry is chosen as follows:
+
+| Spine `role` | File `role` | Result |
+|--------------|-------------|--------|
+| set | set to the same string | that string |
+| set | set to a different string | processing MUST fail |
+| set | absent | the spine role |
+| absent | set | the file role |
+| absent | absent | processing MUST fail |
+
+A CSV spine entry has no YAML. Its `role` MUST come from the spine entry.
+
+**Example 3.** A root manuscript.
+
+````markdown
+---
+role: toc
+meta: meta.md
+layout: layout.rig.json
+spine:
+  - { file: "00-dedication.md", role: dedication }
+  - { file: "01-genesis.md", role: chapter }
+  - { file: "prices.csv", role: chapter }
+---
+
+# Contents
+
+The root body keeps this file's role.
+````
+
+**Example 4.** A Markdown file named by that spine.
+
+````markdown
+---
+title: "Genesis"
+role: chapter
+---
+
+# Genesis
+
+Chapter body.
+````
+
+The result of Example 3, with Example 4, a dedication file, and `prices.csv`, is four sibling `Div`s: `toc`, then `dedication`, then `chapter`, then `chapter` again for the CSV table.
+
+## 6. Flow breaks
+
+### 6.1 Meaning
+
+A **flow break** ends the current place in the story and advances to the next place the text can continue.
+
+With one column, the next place is the next page. With more than one column, the normal advance goes to the next column. An author writes a more specific break only when a different advance is required.
+
+The normal advance is the advance to the next frame of the flow. This profile has no separate frame-break token.
+
+### 6.2 Syntax
+
+A flow break is a paragraph whose text with leading and trailing whitespace removed is exactly one source in the table below.
+
+In Pandoc Markdown a paragraph is separated from surrounding blocks by blank lines. The source therefore stands on a line of its own: a blank line before it when something precedes it, and a blank line after it when something follows it.
+
+| Source | Kind |
+|--------|------|
+| `//break` | normal advance |
+| `//break page` | forced page |
+| `//break odd` | next odd page (recto) |
+| `//break even` | next even page (verso) |
+
+A processor MUST recognize each row of the table.
+
+A processor MUST also accept the TeX aliases in Appendix B.1. Authors SHOULD write the `//break` forms.
+
+A processor MAY treat a paragraph whose only character is a form feed (U+000C) as a normal advance. Authors SHOULD write `//break`.
+
+These are not flow breaks:
+
+- a thematic break (§7)
+- a heading
+- a blank line
+
+A layout MAY begin a chapter on a new page. That is a property of the layout. This profile requires an advance only where the manuscript contains a flow break.
+
+CSV files have no flow breaks (§8.6).
+
+### 6.3 Docx
+
+A conformant Docx processor MUST emit one Word mark per flow break, in the same order as the breaks in the manuscript.
+
+| Kind | Word mark |
+|------|-----------|
+| normal advance | a break `w:br` with `w:type="column"` |
+| forced page | a break `w:br` with `w:type="page"` |
+| next odd page | a section mark whose type is `oddPage` |
+| next even page | a section mark whose type is `evenPage` |
+
+In a one-column Word section, Word displays a column break as a new page. The mark in the file is still a column break. `//break page` is a page break in every section.
+
+**Example 5.** A normal advance.
+
+````markdown
+Body before the advance.
+
 //break
-```
 
-This is the normal advance. The reference filter emits a Docx column break (`w:br` with `w:type="column"`). In a one-column section, Word shows that as a new page. In a multi-column section, it advances to the next column.
+Body after the advance.
+````
 
-For TeX, the filter emits `\columnbreak` when that command exists, and `\newpage` otherwise.
+Docx contains a column break between the two paragraphs.
 
-### 5.2 Forced page
+**Example 6.** A forced page, then a side.
 
-On its own line, surrounded by blank lines:
+````markdown
+Body before a forced page.
 
-```markdown
 //break page
-```
 
-Compliant processors MUST treat this as a Docx page break (`w:br` with `w:type="page"`). TeX output is `\newpage`.
+Body before an odd page.
 
-Processors MUST also treat raw `\newpage` and `\pagebreak` as this forced page.
+//break odd
 
-### 5.3 Page side (gated)
+Body before an even page.
 
-On their own line, surrounded by blank lines:
+//break even
 
-| Authoring | Intent | Docx gate | TeX |
-|-----------|--------|-----------|-----|
-| `//break odd` | Force odd (recto) page | `w:type w:val="oddPage"` section mark | `\cleardoublepage` |
-| `//break even` | Force even (verso) page | `w:type w:val="evenPage"` section mark | best-effort clear-to-even |
+Body after the even page.
+````
 
-Processors MUST also accept raw `\columnbreak` as `//break`, and raw `\cleardoublepage` as `//break odd`.
+Docx contains, in this order, a page break, an `oddPage` section mark, and an `evenPage` section mark.
 
-### 5.4 Forbidden as hard break
+Behaviour for TeX, HTML, EPUB, and ICML is in Appendix B. It is not part of Docx conformance.
 
-- `---` / `***` / `___` thematic breaks  
-- A heading alone (layout MAY start chapters on new pages; that is fulfillment, not dialect)
+## 7. Thematic breaks
 
-### 5.5 Form feed
+A line containing only `---`, `***`, or `___` is a **thematic break**, as in Pandoc Markdown. It marks a pause in the scene or the section. It is not a flow break. It MUST NOT produce a page break, a column break, or a section mark.
 
-Processors MAY accept a form-feed-only paragraph (`\f`) as `//break`. Authors SHOULD prefer `//break`.
+A print layout MAY render a thematic break as an ornament or as space.
 
-### 5.6 Docx requirement
+**Example 7.** A pause, then a real advance.
 
-With `bash tools/verify.sh`:
+````markdown
+The scene ends.
 
-- each `//break` MUST produce a Word column break (`w:type="column"`) in document order
-- each `//break page` and each raw `\newpage` MUST produce a Word page break (`w:type="page"`) in document order
-- `fixtures/break-overrides.md` MUST produce at least one `w:type="column"`, one `w:type="page"`, one `oddPage`, and one `evenPage` mark
+---
 
-## 6. Thematic breaks
+The next scene.
 
-`---` / `***` / `___` mean **scene or section pause**, not a new page. Print layout MAY render them as ornaments or space.
+//break
 
-## 7. Body elements (inherited)
+The next page, in a one-column layout.
+````
 
-Unless this spec forbids them, Pandoc Markdown body forms are allowed: paragraphs, emphasis, strong, links, block quotes, fenced code, lists, tables, footnotes (if enabled).
-
-Books SHOULD keep tables simple. Tables MAY calculate (§8).
+The thematic break contributes no Word break. The `//break` contributes one column break.
 
 ## 8. Tables and calculations
 
-A table cell is either a **literal** or a **calculation**. That difference is the whole dialect here; there is no third kind of cell.
+A table cell is either a **literal** or a **calculation**. There is no third kind of cell.
+
+The same rules apply to Markdown tables and to CSV tables (§8.6).
 
 ### 8.1 Literal or calculation
 
-- A cell whose trimmed text starts with `=` is a **calculation**. The `=` MUST be the first character and the formula MUST be the whole cell.
+- A cell whose trimmed text starts with `=` is a **calculation**. The `=` MUST be the first character. The formula MUST be the whole cell.
 - Every other cell is a **literal**, including numbers. A literal is never re-interpreted as a formula.
-- A cell starting `'=…` is a literal starting with `=`; the apostrophe is not printed. A formula written as a lone code span is likewise a literal.
+- A cell that starts with `'=` is a literal that starts with `=`. The leading apostrophe is not printed. A formula written as a lone code span is likewise a literal.
 
-```markdown
+**Example 8.** A Markdown table with calculations.
+
+````markdown
 | Item | Qty | Price | Line total |
 |------|-----|-------|------------|
 | Apples | 2 | 3 | =C2*C3 |
 | Pears | 4 | 5 | =@Qty*@Price |
-```
+| Total | =SUM(C2R1:C2R2) | | =SUM(C4R1:C4R2) |
+````
 
-### 8.2 References (column first)
+Export shows these visible values. The formulas stay hidden with the cells (§8.4).
 
-References are written **column, then row** — the Excel A1 order, with explicit `C` / `R` markers instead of a column letter, so a column wider than `Z` and a header rename cannot silently change the meaning.
+| Item | Qty | Price | Line total |
+|------|-----|-------|------------|
+| Apples | 2 | 3 | 6 |
+| Pears | 4 | 5 | 20 |
+| Total | 6 | | 26 |
+
+### 8.2 References
+
+References are written **column, then row**. Columns use `C` and an index. Rows use `R` and an index. That order matches ordinary spreadsheet cells, without a letter that runs out after `Z`.
 
 | Reference | Meaning |
 |-----------|---------|
-| `C2` | Column 2, **same row** as the formula |
+| `C2` | Column 2, same row as the formula |
 | `C2R4` | Column 2, row 4 |
 | `R4C2` | Accepted alias for `C2R4`; authors SHOULD write the `CR` form |
 | `@Qty` | Column headed `Qty`, same row |
@@ -194,38 +367,49 @@ References are written **column, then row** — the Excel A1 order, with explici
 | `@QtyR4` / `@{Unit Price}R4` | Headed column, row 4 |
 | `@Apples` | Row whose first cell is `Apples`, as a function argument |
 | `@Qty@Apples` / `C2@Apples` | Named or numbered column, row named `Apples` |
-| `@{Cherry picking}` | Row (or column) whose name contains spaces |
-| `C2R1:C2R4` | Rectangular range, used as a function argument |
+| `@{Cherry picking}` | Row or column whose name contains spaces |
+| `C2R1:C2R4` | Rectangular range, as a function argument |
 | `SUM(C2)` / `SUM(@Qty)` | Whole body column, as a function argument |
 | `SUM(@Apples)` / `SUM(@Apples:@Pears)` | Whole named row, or named rows, as a function argument |
 
 Rules:
 
-- Columns count from `1` at the left, **including** hidden columns (§8.4). Rows count from `1` at the first **body** row; the header row is never numbered and foot rows continue the body numbering.
-- A row is named by the text of its first body cell. Names are matched case-insensitively with spaces squeezed; when two rows share a name, the first wins. A formula cell cannot name its row.
-- Position decides what an `@name` means: standing alone it is a column if a header matches, otherwise a row; in second position, after a column (`@Qty@Apples`, `C2@Apples`), it is always the row. That keeps `@Qty` meaning what it already meant when a row happens to share the name.
-- A bare header name (`Qty*Price`) is accepted and means the same as `@Qty`; authors SHOULD prefer `@`, which cannot be confused with a function name.
-- A whole-column reference used outside an aggregate function means the same-row cell. A whole-row reference is only meaningful as a function argument; using one as a scalar operand is `#VALUE!` (§8.5).
+- Columns count from `1` at the left, including hidden columns (§8.4). Rows count from `1` at the first body row. The header row is never numbered. Foot rows continue the body numbering.
+- A row is named by the text of its first body cell. Names match case-insensitively with spaces squeezed. When two rows share a name, the first wins. A formula cell cannot name its row.
+- Standing alone, `@name` is a column if a header matches, otherwise a row. In second position after a column (`@Qty@Apples`, `C2@Apples`), it is always the row.
+- A bare header name (`Qty*Price`) is accepted and means the same as `@Qty`. Authors SHOULD prefer `@`, which cannot be confused with a function name.
+- A whole-column reference used outside an aggregate function means the same-row cell. A whole-row reference is only meaningful as a function argument. Used as a scalar operand, it is `#VALUE!` (§8.5).
 - References reach only within their own table. There are no cross-table, cross-file, or sheet references.
 - A cell with a column or row span is referenced by its top-left (anchor) column and row.
 
 ### 8.3 Operators and functions
 
-Formulas support `+`, `-`, `*`, `/`, `^`, parentheses, unary minus, and a trailing `%` (`50%` is `0.5`). Supported functions are `SUM`, `AVERAGE` (alias `AVG`), `MIN`, `MAX`, `COUNT`, and `PRODUCT`, separated by commas and ranges as in `SUM(C2R1:C2R4, C3R1)`.
+Formulas support `+`, `-`, `*`, `/`, `^`, parentheses, unary minus, and a trailing `%` (`50%` is `0.5`). Supported functions are `SUM`, `AVERAGE` (alias `AVG`), `MIN`, `MAX`, `COUNT`, and `PRODUCT`. Arguments are separated by commas. Ranges are written as in `SUM(C2R1:C2R4, C3R1)`.
 
-Literal numbers MAY carry commas, a leading `$` / `£` / `€`, a trailing `%`, or accounting parentheses for a negative value. Inside a range or whole column, aggregates ignore empty and non-numeric cells; a non-numeric cell used as a scalar operand is an error (§8.5). Results are plain numbers — integers print without a decimal point, other results print with up to ten significant digits. Currency and unit labels belong in the header, not in the result.
+Literal numbers MAY carry commas, a leading `$` / `£` / `€`, a trailing `%`, or accounting parentheses for a negative value. Inside a range or whole column, aggregates ignore empty and non-numeric cells. A non-numeric cell used as a scalar operand is an error (§8.5). Results are plain numbers. Integers print without a decimal point. Other results print with up to ten significant digits. Currency and unit labels belong in the header, not in the result.
 
-### 8.4 What the reader sees; hidden formulas and hidden columns
+### 8.4 What the reader sees
 
-The calculation is worked out at export, not by Word and not by the reader.
+The calculation is worked out at export. Word does not calculate it. The reader does not calculate it.
 
 - A compliant processor MUST replace the visible cell with its result. To the reader, a calculated column is an ordinary column of numbers.
-- The processor MUST keep the source formula hidden with the result: the reference filter stamps a `data-calc` attribute on the cell (visible in the Pandoc AST and in HTML) and, for Docx, appends the formula as hidden (`w:vanish`) text in the same cell, so import can round-trip it. Hidden text MUST NOT print.
-- A **hidden helper column** — a header ending in `(hidden)`, as in `Factor (hidden)` — MUST NOT appear in the exported table, but its cells MAY be referenced like any other column and it still counts in column numbering. Its header is referenced without the suffix (`@Factor`).
+- The processor MUST keep the source formula with the result. The reference filter stamps a `data-calc` attribute on the cell (visible in the Pandoc AST and in HTML). For Docx, it appends the formula as hidden (`w:vanish`) text in the same cell, so import can round-trip it. Hidden text MUST NOT print.
+- A **hidden helper column** has a header that ends in `(hidden)`, as in `Factor (hidden)`. It MUST NOT appear in the exported table. Its cells MAY be referenced like any other column. It still counts in column numbering. Its header is referenced without the suffix (`@Factor`).
+
+**Example 9.** A hidden helper column.
+
+````markdown
+| Item | Qty | Pack price | Factor (hidden) | Line total |
+|------|-----|------------|-----------------|------------|
+| Apples | 2 | 3 | 10 | =C2*C3*C4 |
+| Pears | 4 | 5 | 2 | =@Qty*@{Pack price}*@Factor |
+````
+
+Export shows four columns. `Factor` is gone. Line totals are `60` and `40`.
 
 ### 8.5 Errors
 
-A broken formula MUST NOT abort the export and MUST NOT silently become `0`. The cell shows one of these values instead of a result:
+A broken formula MUST NOT abort the export. It MUST NOT silently become `0`. The cell shows one of these values instead of a result:
 
 | Value | Cause |
 |-------|-------|
@@ -238,55 +422,135 @@ A broken formula MUST NOT abort the export and MUST NOT silently become `0`. The
 
 Live Word fields, string and date arithmetic, comparisons, and `IF` are not part of this section.
 
+**Example 10.** Errors stay visible.
+
+````markdown
+| Label | Value |
+|-------|-------|
+| Broken | =C2R1/0 |
+| Missing | =C9R9 |
+````
+
+Export shows `#DIV/0!` and `#REF!` in those cells.
+
 ### 8.6 CSV tables
 
-MarkBreak supports **CSV from the start**. A `.csv` file is a table source that uses the **same** calculation dialect as Markdown tables (§8.1–§8.5).
+A `.csv` file is a table source under §8.1 through §8.5. Encoding MUST be UTF-8. The field separator is a comma. Quoting and newlines inside fields follow RFC 4180.
 
-#### Shape
+- The first row is the header. Later rows are body rows. There is no foot row in CSV.
+- A spine `file` whose path ends in `.csv` (ASCII, case-insensitive) MUST be read as CSV, not as Markdown.
+- A CSV file MUST NOT carry YAML front matter. It MUST NOT contain flow breaks.
+- When the file is listed in `spine`, its `role` MUST come from the spine entry (§5). When the CSV is the sole root input, `role` MAY be omitted.
 
-- Encoding MUST be UTF-8. Field separator is comma. Quoting and newlines inside fields follow RFC 4180.
-- The **first row is the header row**. Later rows are body rows. There is no foot row in CSV.
-- A cell whose trimmed text starts with `=` is a calculation; every other cell is a literal — identical to §8.1.
-- Header names ending in `(hidden)` mark helper columns (§8.4).
-- A `.csv` file MUST NOT carry YAML front matter and MUST NOT contain `//break` lines. Role comes from the spine entry when the file is listed in `spine`, or may be omitted when the CSV is the sole root input (a table-only document).
+**Example 11.** A CSV table.
 
-```csv
-Item,Qty,Pack price,Factor (hidden),Line total
-Apples,2,3,10,=C2*C3*C4
-Pears,4,5,2,=@Qty*@{Pack price}*@Factor
-Total,"=SUM(C2R1:C2R2)",,,=SUM(C5R1:C5R2)
-```
+````csv
+Item,Qty,Price,Line total
+Apples,2,3,=C2*C3
+Pears,4,5,=@Qty*@Price
+````
 
-#### Processing
+Export shows `6` and `20` in the last column. The formulas stay hidden as in §8.4.
 
-- Compliant processors MUST read `.csv` as a Pandoc table (or equivalent) and MUST apply §8 before export.
-- The reference filter reads spine `.csv` paths with Pandoc’s CSV reader, then runs the same table walk used for Markdown tables.
-- Export shows calculated results; formulas remain hidden for round-trip as in §8.4.
-- References still reach only within that one table. There are no cross-CSV or CSV-to-Markdown cell references.
+A Markdown file on the spine may still contain a Markdown table. That is unchanged. References still reach only within one table. There are no cross-CSV or CSV-to-Markdown cell references.
 
-## 9. Code
+## 9. The rest of Pandoc Markdown
 
-Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert fences survive Docx; it NEED NOT assert monospace metrics.
+Paragraphs, emphasis, strong emphasis, links, images, block quotes, fenced code blocks, lists, tables, and footnotes are allowed. Footnotes require Pandoc's footnotes extension, as usual.
 
-## 10. Explicit non-goals
+Fenced code is allowed. This profile does not set a measure for it. It does not require a monospace face.
 
-- HTML-first page CSS as the source of truth  
-- Requiring LaTeX as the author format  
-- Guaranteeing identical line breaks across engines (only **flow** breaks are dialect-mandatory)  
-- A distinct frame-break token  
-- DITA-style rhetorical typing (claim / evidence / aside as KM types)
+Books SHOULD keep tables simple. Tables MAY calculate (§8).
+
+## 10. What this profile does not specify
+
+- CSS or HTML as the source of the page
+- LaTeX as the language an author must write
+- The same line breaks from every processor
+- A frame-break token other than the normal advance in §6.1
+- Rhetorical labels such as claim, evidence, and aside
 
 ## 11. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.7.0)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant** at version 0.7.0 when this command exits 0:
 
-- `fixtures/minimal-pagebreak.md`
-- `fixtures/parts-and-chapters.md`
-- `fixtures/roles-and-breaks.md`
-- `fixtures/break-overrides.md`
-- `fixtures/spine-book/book.md`
-- `fixtures/meta-layout/book.md`
-- `fixtures/meta-layout-bad/book.md` (MUST fail)
-- `fixtures/table-calculations.md` (§8: calculated, literal, escaped, hidden-column, and error cells MUST reach Docx as specified)
-- `fixtures/table-calculations.csv` (§8.6: CSV tables calculate with the same dialect)
-- `fixtures/csv-spine/book.md` (§8.6: a spine entry MAY be a `.csv` file)
+```bash
+bash tools/verify.sh
+```
+
+The command runs the reference filter on the fixtures below.
+
+| Fixture | What it requires |
+|---------|------------------|
+| `fixtures/minimal-pagebreak.md` | a Word page break from `\newpage`, and role `chapter` |
+| `fixtures/parts-and-chapters.md` | Word page breaks, and role `part` |
+| `fixtures/roles-and-breaks.md` | a Word page break, a Word column break, and role `dedication` |
+| `fixtures/break-overrides.md` | at least one Word column break, one Word page break, one `oddPage` mark, and one `evenPage` mark, and role `chapter` |
+| `fixtures/spine-book/book.md` | top-level roles `toc`, `dedication`, `chapter` in that order, plus a Word page break and a Word column break |
+| `fixtures/spine-mismatch/book.md` | failure: the spine role and the file role disagree |
+| `fixtures/meta-layout/book.md` | top-level roles `toc`, `chapter` in that order, and a Word column break |
+| `fixtures/meta-layout-bad/book.md` | failure: the layout path leaves the manuscript directory |
+| `fixtures/table-calculations.md` | §8: calculated, literal, escaped, hidden-column, and error cells reach Docx as specified |
+| `fixtures/table-calculations.csv` | §8.6: the same calculation dialect on a CSV root |
+| `fixtures/csv-spine/book.md` | §5 / §8.6: a spine entry may be a `.csv` file |
+
+A manuscript with no role and no flow break is valid. The command does not require breaks in every file. It fails when a break, a role, or a calculation written in one of these fixtures does not survive.
+
+## Appendix A. Layout files
+
+This appendix is informative. A processor implements this profile without reading it.
+
+`layout` names a file. Section 2.4 states the duties toward that path. This profile does not state the grammar of the file.
+
+One format writers use is a [RigWorks](https://rig.works/) document. `fixtures/meta-layout/layout.rig.json` is an example. The page there has a width, a height, and margins. A paragraph style there has `fontSize` and `leading`. Those names belong to RigWorks. They are not keys of this profile. They do not appear in the manuscript.
+
+`fixtures/markbreak-chapter.rig.json` stores a manuscript inside a RigWorks document. That too is a RigWorks encoding. An author writing `//break` in Markdown does not write those identifiers.
+
+## Appendix B. TeX aliases and other outputs
+
+### B.1 TeX aliases in the manuscript
+
+This subsection is normative. It does not change the kinds in §6. It names older Pandoc/TeX spellings that mean the same advance.
+
+A flow break MAY also be a raw TeX block, or a paragraph, whose text with leading and trailing whitespace removed is exactly one source below. A processor MUST treat that source as the kind shown.
+
+| Source | Kind |
+|--------|------|
+| `\columnbreak` | normal advance |
+| `\newpage` | forced page |
+| `\pagebreak` | forced page |
+| `\cleardoublepage` | next odd page (recto) |
+
+A TeX command followed by an empty group is the same command: `\newpage` and `\newpage{}` are both a forced page.
+
+There is no standard TeX one-liner for next even page. Authors write `//break even`.
+
+### B.2 Role recovery outside Docx
+
+This subsection is informative. Docx conformance (§11) does not depend on it.
+
+In ICML, the reference filter sets body paragraphs to `ParagraphStyle/<role>`.
+
+### B.3 Flow breaks outside Docx
+
+This subsection is informative. It records what the reference filter emits for formats other than Docx.
+
+When the output is TeX, a flow break that is a Markdown paragraph is written as follows. A raw TeX block that is already one of the commands in B.1 is left as written.
+
+| Kind | TeX |
+|------|-----|
+| normal advance | `\columnbreak` when that command is defined, otherwise `\newpage` |
+| forced page | `\newpage` |
+| next odd page | `\cleardoublepage` |
+| next even page | clear forward to the next even page |
+
+When the output is HTML or EPUB, the filter emits an empty element with a `break-before` style. HTML uses `div`. EPUB uses `p`.
+
+| Kind | `break-before` | ICML `Br` |
+|------|----------------|-----------|
+| normal advance | `column` | `nextColumn` |
+| forced page | `page` | `nextPage` |
+| next odd page | `right` | `nextOddPage` |
+| next even page | `left` | `nextEvenPage` |
+
+For any other output format, the reference filter emits a paragraph that contains a form feed.

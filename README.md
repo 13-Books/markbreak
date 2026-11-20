@@ -66,7 +66,7 @@ Apples,2,3,=C2*C3
 Pears,4,5,=@Qty*@Price
 ```
 
-Put `prices.csv` in the `spine`, or run `pandoc prices.csv -f csv -L tools/markbreak.lua`. The export shows only the results — to a reader it is an ordinary extra column. The formula stays hidden in the cell (`data-calc`, and hidden text in Docx) so it can round-trip. A header ending in `(hidden)` makes a helper column that formulas can use but readers never see. The full rules are in [specification.md](specification.md) §8 and §8.6.
+Put `prices.csv` in the `spine`, or run `pandoc prices.csv -f csv -L tools/markbreak.lua`. The export shows only the results — to a reader it is an ordinary extra column. The formula stays hidden in the cell (`data-calc`, and hidden text in Docx) so it can round-trip. A header ending in `(hidden)` makes a helper column that formulas can use but readers never see. The full rules are in [specification.md](specification.md) §8.
 
 ## Book shape
 
