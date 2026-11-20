@@ -55,7 +55,7 @@
     .brand {
       font-family: "Schibsted Grotesk", system-ui, sans-serif;
       font-weight: 900;
-      font-size: clamp(2.4rem, 4.5vw, 4.25rem);
+      font-size: clamp(2.2rem, 3.2vw, 3.4rem);
       letter-spacing: -0.05em;
       line-height: 0.9;
       margin: 0;
@@ -63,7 +63,7 @@
     }
     .intro p {
       margin: 0;
-      max-width: 24rem;
+      max-width: 18rem;
       color: var(--mute);
       font-size: 1.02rem;
       font-weight: 400;
@@ -91,10 +91,11 @@
       min-height: 100%;
     }
     section.block {
-      padding: 2.25rem 1.75rem 2.5rem;
+      padding: 2rem 1.5rem 2.25rem;
       color: var(--type);
       display: flex;
       flex-direction: column;
+      min-width: 0;
     }
     section.block h2 {
       font-family: "Schibsted Grotesk", system-ui, sans-serif;
@@ -121,11 +122,12 @@
       margin: 1rem 0 0;
       background: rgba(0,0,0,0.18);
       color: inherit;
-      padding: 1rem 1.1rem;
+      padding: 0.85rem 0.95rem;
       overflow-x: auto;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       line-height: 1.45;
       font-family: ui-monospace, "Cascadia Code", monospace;
+      max-width: 100%;
     }
     section.block pre code {
       background: none;
@@ -172,11 +174,16 @@
       }
     }
 
+    @media (min-width: 1100px) {
+      .rail { padding: 2.75rem 1.75rem 2.25rem; }
+      .brand { font-size: clamp(2.2rem, 2.6vw, 3.1rem); }
+    }
+
     @media (min-width: 1400px) {
-      .rail { padding: 3rem 2.25rem 2.5rem; }
-      .brand { font-size: clamp(2.8rem, 3.8vw, 4.5rem); }
-      section.block { padding: 2.75rem 2.25rem 3rem; }
-      section.block pre { font-size: 0.88rem; }
+      .rail { padding: 3rem 2rem 2.5rem; }
+      .brand { font-size: clamp(2.4rem, 2.4vw, 3.2rem); }
+      section.block { padding: 2.5rem 1.75rem 2.75rem; }
+      section.block pre { font-size: 0.8rem; }
     }
   </style>
 </head>
@@ -211,8 +218,8 @@ role: epilog
         <p>A cell that starts with <code>=</code> calculates. Readers see only the results.</p>
         <pre><code>| Item   | Qty | Price | Line total   |
 |--------|-----|-------|--------------|
-| Apples |   2 |     3 |       =C2*C3 |
-| Pears  |   4 |     5 | =@Qty*@Price |</code></pre>
+| Apples | 2   | 3     | =C2*C3       |
+| Pears  | 4   | 5     | =@Qty*@Price |</code></pre>
       </section>
 
       <section class="block breaks" id="breaks">
