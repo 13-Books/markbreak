@@ -308,6 +308,111 @@ PY
   fi
 }
 
+check_csv_calculations() {
+  local name="table-calculations-csv"
+  local src="$root/fixtures/table-calculations.csv"
+  local docx="$out/${name}.docx"
+
+  "$pandoc" "$src" -f csv -t docx -L "$filter" -o "$docx"
+
+  if "$python" - "$docx" <<'PY'
+import sys, zipfile
+import xml.etree.ElementTree as ET
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+with zipfile.ZipFile(sys.argv[1]) as z:
+    root = ET.fromstring(z.read("word/document.xml"))
+
+def run_text(run, hidden):
+    rpr = run.find(f"{W}rPr")
+    vanish = rpr is not None and rpr.find(f"{W}vanish") is not None
+    if vanish != hidden:
+        return ""
+    return "".join(t.text or "" for t in run.iter(f"{W}t"))
+
+def cells(row, hidden=False):
+    return ["".join(run_text(r, hidden) for r in tc.iter(f"{W}r")).strip()
+            for tc in row.findall(f"{W}tc")]
+
+tables = [[cells(tr) for tr in tbl.findall(f"{W}tr")]
+          for tbl in root.iter(f"{W}tbl")]
+hidden = [[cells(tr, hidden=True) for tr in tbl.findall(f"{W}tr")]
+          for tbl in root.iter(f"{W}tbl")]
+
+assert len(tables) == 1, f"expected one CSV table, got {len(tables)}"
+expected = [
+    ["Item", "Qty", "Pack price", "Line total"],
+    ["Apples", "2", "3", "60"],
+    ["Pears", "4", "5", "40"],
+    ["Total", "6", "4", "100"],
+]
+assert tables[0] == expected, f"csv table: {tables[0]!r}"
+visible = [cell for row in tables[0] for cell in row]
+assert "Factor" not in visible, "hidden helper column leaked from CSV"
+hidden_flat = [cell for row in hidden[0] for cell in row if cell]
+assert "=C2*C3*C4" in hidden_flat, f"csv hidden formulas: {hidden_flat!r}"
+print("table-calculations.csv: Docx values and hidden column OK")
+PY
+  then
+    ok "$name Docx calculations"
+  else
+    fail "$name Docx calculations"
+  fi
+}
+
+check_csv_spine() {
+  local name="csv-spine"
+  local src="$root/fixtures/csv-spine/book.md"
+  local docx="$out/${name}.docx"
+  local json="$out/${name}.json"
+
+  "$pandoc" "$src" -f markdown -t docx -L "$filter" -o "$docx"
+  "$pandoc" "$src" -f markdown -t json -L "$filter" -o "$json"
+
+  if role_present "$json" "chapter"; then
+    ok "$name role=chapter"
+  else
+    fail "$name missing role=chapter in AST"
+  fi
+
+  if "$python" - "$docx" <<'PY'
+import sys, zipfile
+import xml.etree.ElementTree as ET
+
+W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+with zipfile.ZipFile(sys.argv[1]) as z:
+    root = ET.fromstring(z.read("word/document.xml"))
+
+def run_text(run):
+    rpr = run.find(f"{W}rPr")
+    if rpr is not None and rpr.find(f"{W}vanish") is not None:
+        return ""
+    return "".join(t.text or "" for t in run.iter(f"{W}t"))
+
+def cell_text(tc):
+    return "".join(run_text(r) for r in tc.iter(f"{W}r")).strip()
+
+tables = []
+for tbl in root.iter(f"{W}tbl"):
+    tables.append([[cell_text(tc) for tc in tr.findall(f"{W}tc")]
+                   for tr in tbl.findall(f"{W}tr")])
+assert tables, "no tables in csv-spine Docx"
+expected = [
+    ["Item", "Qty", "Price", "Line total"],
+    ["Apples", "2", "3", "6"],
+    ["Pears", "4", "5", "20"],
+    ["Total", "6", "", "26"],
+]
+assert tables[0] == expected, f"spine csv table: {tables[0]!r}"
+print("csv-spine: Docx table OK")
+PY
+  then
+    ok "$name Docx CSV spine"
+  else
+    fail "$name Docx CSV spine"
+  fi
+}
+
 check minimal-pagebreak 1 chapter
 check parts-and-chapters 3 part
 check roles-and-breaks 1 dedication 1
@@ -317,6 +422,8 @@ check_spine_mismatch
 check_meta_layout
 check_meta_layout_bad
 check_table_calculations
+check_csv_calculations
+check_csv_spine
 
 if (( failed > 0 )); then
   echo "verify FAILED ($failed check(s))"

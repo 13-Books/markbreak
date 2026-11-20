@@ -864,6 +864,12 @@ local function validate_path_keys(meta)
   end
 end
 
+local function is_csv_path(path)
+  return path:lower():match('%.csv$') ~= nil
+end
+
+-- Spine entries MAY be Markdown or CSV (§1, §8.6). CSV becomes a Pandoc table;
+-- §8 calculations run in the shared Table walk.
 local function read_manuscript(path)
   local f, err = io.open(path, 'r')
   if not f then
@@ -875,6 +881,9 @@ local function read_manuscript(path)
     error('MarkBreak spine file unreadable: ' .. path)
   end
   text = text:gsub('\r\n', '\n'):gsub('\r', '\n')
+  if is_csv_path(path) then
+    return pandoc.read(text, 'csv')
+  end
   return pandoc.read(text, 'markdown')
 end
 

@@ -1,0 +1,4 @@
+Item,Qty,Pack price,Factor (hidden),Line total
+Apples,2,3,10,=C2*C3*C4
+Pears,4,5,2,=@Qty*@{Pack price}*@Factor
+Total,"=SUM(C2R1:C2R2)","=AVERAGE(C3R1:C3R2)",,"=SUM(C5R1:C5R2)"

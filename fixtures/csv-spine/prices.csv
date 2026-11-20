@@ -1,0 +1,4 @@
+Item,Qty,Price,Line total
+Apples,2,3,=C2*C3
+Pears,4,5,=@Qty*@Price
+Total,"=SUM(C2R1:C2R2)",,"=SUM(C4R1:C4R2)"

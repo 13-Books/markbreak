@@ -1,12 +1,13 @@
 # MarkBreak
 
-MarkBreak is a Pandoc Markdown profile for print manuscripts.
+MarkBreak is a plain-text manuscript format for print: roles, flow breaks, and
+tables that calculate — still Pandoc Markdown, proven by Docx round-trip.
 
-- Open profile: [markbreak.com](https://markbreak.com)
+- Site: [markbreak.com](https://markbreak.com)
 - Repository: [13-Books/markbreak](https://github.com/13-Books/markbreak)
 - Writer: [markbreak.app](https://markbreak.app)
 
-**Profile version:** [0.6.0](VERSION). Tag it `v0.6.0`.
+**Version:** [0.7.0](VERSION). Tag it `v0.7.0`.
 
 ## Purpose
 
@@ -16,21 +17,19 @@ Standard Markdown does not record print function or flow breaks.
 - Write the normal advance as `//break` on its own line. With one column, Word shows that as the next page. With more columns, it is the next column.
 - Write `//break page` to force a page. Write `//break odd` or `//break even` when the page side must be specific.
 - `---` is a pause in the scene. Do not use `---` as a page break.
+- Tables MAY calculate: a cell that starts with `=` is a formula (`=C2*C3`, `@Qty`, `SUM(…)`). Export shows the result; the formula stays in the file.
+- **CSV from the start:** a `.csv` file is a table source with the same calculation dialect. List it in `spine`, or process it alone with Pandoc’s CSV reader.
 
-A processor that obeys this profile emits those advances as Word column or page marks. The full rules are in [specification.md](specification.md).
+A processor that obeys MarkBreak emits those advances as Word column or page marks. The full rules are in [specification.md](specification.md).
 
 ## The name
-
-MarkBreak is **Mark** + **Break**, and both halves earn their place.
 
 - **Mark** — Markdown, and the older sense of the word: an author's mark on a manuscript. *This is a chapter. This file is the epilog. Start here.*
 - **Break** — `//break` on its own line: the flow break standard Markdown never records, so a manuscript could not say, in plain text, *turn the page*.
 
-And yes, we break convention a little. On purpose, and only where the convention loses information — where `---` has to double as a page break, where a heading has to guess a file's print role, or where “new page” exists only as a button once pressed inside one app and forgotten by the file itself.
+Markdown never had a page break — only the scene pause (`---`). Headings never carried print role. “New page” lived as a button in one app, forgotten by the file. MarkBreak puts role and break in the manuscript. It stays Pandoc Markdown; `---` stays a pause in the scene.
 
-Everything that already works stays unbroken. It is still Pandoc Markdown, still plain text a human can read, and `---` still means a pause in the scene. The break is small. The point is that the manuscript, not the app, gets to say it.
-
-Praised, in that spirit, by [Plain Text Humans](https://plaintexthumans.com).
+Praised by [Plain Text Humans](https://plaintexthumans.com).
 
 ## Roles
 
@@ -59,7 +58,15 @@ A cell that starts with `=` is a calculation; every other cell is a literal. Ref
 | Total | =SUM(C2R1:C2R2) | | =SUM(C4R1:C4R2) |
 ```
 
-The export shows only the results — to a reader it is an ordinary extra column. The formula stays hidden in the cell (`data-calc`, and hidden text in Docx) so it can round-trip. A header ending in `(hidden)` makes a helper column that formulas can use but readers never see. The full rules, functions (`SUM`, `AVERAGE`, `MIN`, `MAX`, `COUNT`, `PRODUCT`), and error values (`#DIV/0!`, `#REF!`, `#CYCLE!`, …) are in [specification.md](specification.md) §8.
+The same dialect works in **CSV** — MarkBreak supports it from the start:
+
+```csv
+Item,Qty,Price,Line total
+Apples,2,3,=C2*C3
+Pears,4,5,=@Qty*@Price
+```
+
+Put `prices.csv` in the `spine`, or run `pandoc prices.csv -f csv -L tools/markbreak.lua`. The export shows only the results — to a reader it is an ordinary extra column. The formula stays hidden in the cell (`data-calc`, and hidden text in Docx) so it can round-trip. A header ending in `(hidden)` makes a helper column that formulas can use but readers never see. The full rules are in [specification.md](specification.md) §8 and §8.6.
 
 ## Book shape
 
@@ -102,11 +109,11 @@ The command fails when a break written in a fixture does not reach Word, or when
 ## How it ships
 
 1. You write the manuscript in Markdown.
-2. The MarkBreak profile supplies the roles and the flow breaks.
+2. MarkBreak records the roles and the flow breaks in the file.
 3. Pandoc and `tools/markbreak.lua` write a Docx file.
 4. Relay, Word, InDesign, or a press PDF does the layout.
 
-[markbreak.app](https://markbreak.app) is the writer. The writer emits this profile.
+[markbreak.app](https://markbreak.app) is the writer. It emits MarkBreak manuscripts.
 
 MarkBreak is not GFM, not an HTML book generator, and not a layout engine.
 
@@ -114,8 +121,8 @@ MarkBreak is not GFM, not an HTML book generator, and not a layout engine.
 
 | Path | Contents |
 |------|----------|
-| [VERSION](VERSION) | Version of this profile. Tags use the form `vX.Y.Z`. |
-| [specification.md](specification.md) | Rules for the profile |
+| [VERSION](VERSION) | Format version. Tags use the form `vX.Y.Z`. |
+| [specification.md](specification.md) | Rules |
 | [index.html](index.html) | Page for markbreak.com |
 | `fixtures/` | Test manuscripts |
 | `tools/` | Pandoc filter and the check |

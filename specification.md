@@ -1,13 +1,13 @@
-# MarkBreak — Specification (0.6.0)
+# MarkBreak — Specification (0.7.0)
 
-**Product:** [MarkBreak](https://markbreak.com) — print manuscript profile for Pandoc Markdown.  
-**Writer:** [markbreak.app](https://markbreak.app) emits this profile; it is not a second dialect.
+**Product:** [MarkBreak](https://markbreak.com) — plain-text manuscript format for print (roles, flow breaks, tables that calculate), still Pandoc Markdown.  
+**Writer:** [markbreak.app](https://markbreak.app) emits MarkBreak; it is not a second dialect.
 
-**Why:** Print authors need an enforceable Markdown contract for **roles** and **flow breaks**.
+**Why:** Print authors need an enforceable Markdown contract for **roles**, **flow breaks**, and **tables that calculate** — including CSV from the start.
 
-**Normative intent:** a MarkBreak manuscript MUST round-trip through Pandoc to Docx with hard flow breaks intact, SHOULD carry YAML `role` into the Pandoc AST, and SHOULD remain readable as ordinary Markdown where unknown lines are ignored.
+**Normative intent:** a MarkBreak manuscript MUST round-trip through Pandoc to Docx with hard flow breaks intact, SHOULD carry YAML `role` into the Pandoc AST, and SHOULD remain readable as ordinary Markdown where unknown lines are ignored. CSV table files MUST accept the same calculation dialect as Markdown tables (§8).
 
-This is a **profile** of Pandoc Markdown, not a rival language. See [Purpose](README.md#Purpose).
+This is Pandoc Markdown with a print contract, not a rival language. See [Purpose](README.md#Purpose).
 
 **RigWorks:** Portable meaning uses `rig.media.code`, `rig.story.flow` `role`, and `rig.story.paragraph` `breakType`. Publication facts live in `meta.md`. Trim, margins, and type size live in the RigWorks layout file named by `layout`. The chapter does not carry them. The writer (`markbreak.app`) copies that page into Docx and PDF. The reference filter rejects absolute and `..` paths for `meta`, `layout`, and `spine`; it does not invent a page size or render the layout. See [rig.works](http://www.rig.works/) and example `fixtures/markbreak-chapter.rig.json`.
 
@@ -15,10 +15,10 @@ This is a **profile** of Pandoc Markdown, not a rival language. See [Purpose](RE
 
 A book MAY be:
 
-1. **One file** — single `.md` with YAML front matter, or  
-2. **Many files** — the root manuscript lists them in `spine` (§2). The reference filter concatenates that list.
+1. **One file** — a single `.md` with YAML front matter, or a single `.csv` table (§8.6), or  
+2. **Many files** — the root manuscript lists them in `spine` (§2). The reference filter concatenates that list. Spine entries MAY be `.md` or `.csv`.
 
-Chapter files SHOULD use a numeric prefix for stable sort (`01-title.md`, `02-genesis.md`).
+Chapter Markdown files SHOULD use a numeric prefix for stable sort (`01-title.md`, `02-genesis.md`). CSV table files SHOULD use a clear name (`prices.csv`, `inventory.csv`).
 
 ## 2. Front matter (YAML-first)
 
@@ -65,7 +65,7 @@ A file processed on its own is its own root and may carry `meta` / `layout`. A f
 - `role` — print role for **this file** (see §3). One file, one role. The JSON field is `rig.story.flow` `role`.
 - `meta` — optional path to the publication file, relative to the root manuscript. Absolute paths and `..` fail (reference filter). That file holds `title`, `subtitle`, `author`, `language`, `isbn13`, and `publisher`. It does not hold margins or type size.
 - `layout` — optional path to a RigWorks layout document, relative to the root manuscript. Absolute paths and `..` fail (reference filter). The page there holds trim and margins. A paragraph style there holds `fontSize` and `leading`. No layout file means the writer does not invent a page size. Copying that page into Docx and PDF is the writer’s job, not the reference filter’s.
-- `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`. When `spine` is non-empty, the reference filter concatenates it in one Pandoc pass. Paths are relative to the root manuscript’s directory; absolute paths and `..` fail. A non-empty root body is wrapped with this file’s `role` and comes first. Each entry’s body follows, in list order, as its own role Div (a sibling, not nested in the root Div). An entry’s `role` and that file’s YAML `role` MUST match when both are set; if neither is set, processing fails. A spine file MUST NOT contain its own `spine`. Child YAML MUST NOT replace the root manuscript’s other meta. Flow breaks inside an entry obey §5.
+- `spine` — optional ordered file list for multi-file books; each entry SHOULD include `role`. When `spine` is non-empty, the reference filter concatenates it in one Pandoc pass. Paths are relative to the root manuscript’s directory; absolute paths and `..` fail. A non-empty root body is wrapped with this file’s `role` and comes first. Each entry’s body follows, in list order, as its own role Div (a sibling, not nested in the root Div). An entry’s `role` and that file’s YAML `role` MUST match when both are set; if neither is set, processing fails. A `.csv` spine entry has no YAML; its `role` MUST come from the spine entry. A spine file MUST NOT contain its own `spine`. Child YAML MUST NOT replace the root manuscript’s other meta. Flow breaks inside Markdown entries obey §5. CSV entries have no flow breaks (§8.6).
 - Unknown keys MUST be preserved when the underlying Pandoc path preserves them.
 
 ## 3. Roles (semantic structure)
@@ -238,6 +238,32 @@ A broken formula MUST NOT abort the export and MUST NOT silently become `0`. The
 
 Live Word fields, string and date arithmetic, comparisons, and `IF` are not part of this section.
 
+### 8.6 CSV tables
+
+MarkBreak supports **CSV from the start**. A `.csv` file is a table source that uses the **same** calculation dialect as Markdown tables (§8.1–§8.5).
+
+#### Shape
+
+- Encoding MUST be UTF-8. Field separator is comma. Quoting and newlines inside fields follow RFC 4180.
+- The **first row is the header row**. Later rows are body rows. There is no foot row in CSV.
+- A cell whose trimmed text starts with `=` is a calculation; every other cell is a literal — identical to §8.1.
+- Header names ending in `(hidden)` mark helper columns (§8.4).
+- A `.csv` file MUST NOT carry YAML front matter and MUST NOT contain `//break` lines. Role comes from the spine entry when the file is listed in `spine`, or may be omitted when the CSV is the sole root input (a table-only document).
+
+```csv
+Item,Qty,Pack price,Factor (hidden),Line total
+Apples,2,3,10,=C2*C3*C4
+Pears,4,5,2,=@Qty*@{Pack price}*@Factor
+Total,"=SUM(C2R1:C2R2)",,,=SUM(C5R1:C5R2)
+```
+
+#### Processing
+
+- Compliant processors MUST read `.csv` as a Pandoc table (or equivalent) and MUST apply §8 before export.
+- The reference filter reads spine `.csv` paths with Pandoc’s CSV reader, then runs the same table walk used for Markdown tables.
+- Export shows calculated results; formulas remain hidden for round-trip as in §8.4.
+- References still reach only within that one table. There are no cross-CSV or CSV-to-Markdown cell references.
+
 ## 9. Code
 
 Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert fences survive Docx; it NEED NOT assert monospace metrics.
@@ -252,7 +278,7 @@ Fenced code blocks are allowed. Print styling is fulfillment. A gate MAY assert 
 
 ## 11. Conformance
 
-A processor is **MarkBreak Docx-conformant (0.6.0)** if `bash tools/verify.sh` exits 0 against:
+A processor is **MarkBreak Docx-conformant (0.7.0)** if `bash tools/verify.sh` exits 0 against:
 
 - `fixtures/minimal-pagebreak.md`
 - `fixtures/parts-and-chapters.md`
@@ -262,3 +288,5 @@ A processor is **MarkBreak Docx-conformant (0.6.0)** if `bash tools/verify.sh` e
 - `fixtures/meta-layout/book.md`
 - `fixtures/meta-layout-bad/book.md` (MUST fail)
 - `fixtures/table-calculations.md` (§8: calculated, literal, escaped, hidden-column, and error cells MUST reach Docx as specified)
+- `fixtures/table-calculations.csv` (§8.6: CSV tables calculate with the same dialect)
+- `fixtures/csv-spine/book.md` (§8.6: a spine entry MAY be a `.csv` file)
