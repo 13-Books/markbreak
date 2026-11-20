@@ -14,15 +14,18 @@
       --mute: #b8b2a6;
       --black: #0a0a0a;
       --type: #1a1714;
-      --red: #ff4921;
-      --sky: #c5d8eb;
-      --green: #1bcd90;
+      /* PTH highlighter fluos, ordered by grey value onto the three middle panels */
+      --fluo-pink: #ff4dce;   /* darkest — was red / Roles */
+      --fluo-green: #39ff14;  /* mid — was teal / Tables */
+      --fluo-yellow: #ffff33; /* lightest — was sky / Breaks */
       --paper: #f3eadc;
+      --footer: #fff;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; min-height: 100%; }
     body {
-      font-family: "Schibsted Grotesk", sans-serif;
+      font-family: "Schibsted Grotesk", system-ui, sans-serif;
+      font-size: 1.02rem;
       background: var(--black);
       color: var(--ink);
       line-height: 1.5;
@@ -50,6 +53,7 @@
       z-index: 2;
     }
     .brand {
+      font-family: "Schibsted Grotesk", system-ui, sans-serif;
       font-weight: 900;
       font-size: clamp(2.4rem, 4.5vw, 4.25rem);
       letter-spacing: -0.05em;
@@ -61,7 +65,8 @@
       margin: 0;
       max-width: 24rem;
       color: var(--mute);
-      font-size: 1.08rem;
+      font-size: 1.02rem;
+      font-weight: 400;
     }
     .intro .links {
       display: flex;
@@ -69,7 +74,7 @@
       align-items: flex-start;
       gap: 0.7rem;
       margin-top: 1.35rem;
-      font-weight: 600;
+      font-weight: 500;
       font-size: 0.95rem;
     }
     .intro .links a {
@@ -92,6 +97,7 @@
       flex-direction: column;
     }
     section.block h2 {
+      font-family: "Schibsted Grotesk", system-ui, sans-serif;
       font-size: clamp(1.4rem, 2.2vw, 1.95rem);
       font-weight: 800;
       letter-spacing: -0.03em;
@@ -101,6 +107,7 @@
     section.block p {
       margin: 0 0 0.75rem;
       font-size: 1.02rem;
+      font-weight: 400;
       max-width: 34rem;
     }
     section.block p:last-of-type { margin-bottom: 0; }
@@ -124,11 +131,15 @@
       background: none;
       padding: 0;
     }
-    .roles { background: var(--red); }
-    .tables { background: var(--green); }
-    .breaks { background: var(--sky); }
+    .roles { background: var(--fluo-pink); }
+    .tables { background: var(--fluo-green); }
+    .breaks { background: var(--fluo-yellow); }
+    .roles code,
+    .roles pre,
+    .tables code,
+    .tables pre,
     .breaks code,
-    .breaks pre { background: rgba(26,23,20,0.08); }
+    .breaks pre { background: rgba(26,23,20,0.1); }
     .csv { background: var(--paper); }
     .csv code,
     .csv pre { background: rgba(26,23,20,0.07); }
@@ -136,7 +147,7 @@
     footer {
       grid-column: 2;
       padding: 1.25rem 1.75rem;
-      background: #fff;
+      background: var(--footer);
       color: #6a6358;
       font-size: 0.875rem;
     }
@@ -219,7 +230,7 @@ role: epilog
     </main>
 
     <footer>
-      <p class="copy">© 2026 <a href="https://plaintexthumans.com">Plain Text Humans</a>.</p>
+      <p class="copy">© 2026 <a href="https://plaintexthumans.com">Plain Text Humans</a></p>
     </footer>
   </div>
 </body>
