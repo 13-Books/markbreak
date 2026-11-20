@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>MarkBreak</title>
-  <meta name="description" content="MarkBreak: a Markdown profile for printed matter. Roles in YAML. Hard breaks in the file. CSV from the start. We break convention a little — for the better." />
+  <meta name="description" content="MarkBreak: a Markdown profile for printed matter. Roles in YAML. Hard breaks in the file. CSV as a table source. We break convention — but only where convention loses the page." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
@@ -28,29 +28,47 @@
       line-height: 1.5;
     }
     a { color: inherit; }
-    header.top {
+
+    .page {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      padding: 2.25rem 1.75rem 2rem;
+      grid-template-columns: max-content minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    .rail {
+      padding: 2.5rem 2rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.35rem;
+      border-right: 1px solid #222;
+      position: sticky;
+      top: 0;
+      align-self: start;
+      min-height: 100vh;
+      width: max-content;
+      background: var(--black);
+      z-index: 2;
     }
     .brand {
       font-weight: 900;
-      font-size: clamp(2.8rem, 8vw, 5.5rem);
+      font-size: clamp(2.4rem, 4.5vw, 4.25rem);
       letter-spacing: -0.05em;
       line-height: 0.9;
       margin: 0;
+      white-space: nowrap;
     }
     .intro p {
-      margin: 0 0 1rem;
-      max-width: 28rem;
+      margin: 0;
+      max-width: 24rem;
       color: var(--mute);
-      font-size: 1.05rem;
+      font-size: 1.08rem;
     }
     .intro .links {
       display: flex;
-      flex-wrap: wrap;
-      gap: 1rem 1.35rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.7rem;
+      margin-top: 1.35rem;
       font-weight: 600;
       font-size: 0.95rem;
     }
@@ -60,23 +78,32 @@
       padding-bottom: 0.1rem;
     }
     .intro .links a:hover { color: #fff; }
+
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-auto-rows: minmax(14rem, 1fr);
+      min-height: 100%;
+    }
     section.block {
-      padding: 3rem 1.75rem 3.25rem;
+      padding: 2.25rem 1.75rem 2.5rem;
       color: var(--type);
+      display: flex;
+      flex-direction: column;
     }
     section.block h2 {
-      font-size: clamp(1.6rem, 3.5vw, 2.1rem);
+      font-size: clamp(1.4rem, 2.2vw, 1.95rem);
       font-weight: 800;
       letter-spacing: -0.03em;
       line-height: 1.1;
-      margin: 0 0 0.85rem;
+      margin: 0 0 0.75rem;
     }
     section.block p {
-      margin: 0 0 0.85rem;
-      max-width: 36rem;
-      font-size: 1.05rem;
+      margin: 0 0 0.75rem;
+      font-size: 1.02rem;
+      max-width: 34rem;
     }
-    section.block p:last-child { margin-bottom: 0; }
+    section.block p:last-of-type { margin-bottom: 0; }
     section.block code {
       font-family: ui-monospace, "Cascadia Code", monospace;
       font-size: 0.9em;
@@ -85,12 +112,11 @@
     }
     section.block pre {
       margin: 1rem 0 0;
-      max-width: 36rem;
       background: rgba(0,0,0,0.18);
       color: inherit;
       padding: 1rem 1.1rem;
       overflow-x: auto;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       line-height: 1.45;
       font-family: ui-monospace, "Cascadia Code", monospace;
     }
@@ -106,68 +132,95 @@
     .csv { background: var(--paper); }
     .csv code,
     .csv pre { background: rgba(26,23,20,0.07); }
+
     footer {
-      padding: 1.75rem;
+      grid-column: 2;
+      padding: 1.25rem 1.75rem;
       background: #fff;
       color: #6a6358;
       font-size: 0.875rem;
     }
     footer a { color: var(--type); }
+
     @media (max-width: 900px) {
-      header.top { grid-template-columns: 1fr; gap: 1rem; }
+      .page { grid-template-columns: 1fr; }
+      .rail {
+        position: static;
+        min-height: 0;
+        width: auto;
+        border-right: none;
+        border-bottom: 1px solid #222;
+        padding: 2rem 1.5rem 1.75rem;
+      }
+      .panels { grid-template-columns: 1fr; grid-auto-rows: auto; }
+      footer { grid-column: 1; }
+      .intro .links {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 1rem 1.35rem;
+      }
+    }
+
+    @media (min-width: 1400px) {
+      .rail { padding: 3rem 2.25rem 2.5rem; }
+      .brand { font-size: clamp(2.8rem, 3.8vw, 4.5rem); }
+      section.block { padding: 2.75rem 2.25rem 3rem; }
+      section.block pre { font-size: 0.88rem; }
     }
   </style>
 </head>
 <body>
-  <header class="top">
-    <h1 class="brand">MarkBreak</h1>
-    <div class="intro">
-      <p>Plain-text manuscripts for printed matter. File Roles in YAML. Hard breaks in the source. We break convention — but only where convention loses the page.</p>
-      <div class="links">
-        <a href="specification.md">Specification ↗</a>
-        <a href="https://github.com/13-Books/markbreak">GitHub ↗</a>
-        <a href="https://markbreak.app">Download App ↗</a>
+  <div class="page">
+    <header class="rail">
+      <h1 class="brand">MarkBreak</h1>
+      <div class="intro">
+        <p>Plain-text manuscripts for printed matter. File Roles in YAML. Hard breaks in the source. We break convention — but only where convention loses the page.</p>
+        <div class="links">
+          <a href="specification.md">Specification ↗</a>
+          <a href="https://github.com/13-Books/markbreak">GitHub ↗</a>
+          <a href="https://markbreak.app">Download App ↗</a>
+        </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <main>
-    <section class="block roles" id="roles">
-      <h2>Roles</h2>
-      <p>One file, one role.</p>
-      <pre><code>---
+    <main class="panels">
+      <section class="block roles" id="roles">
+        <h2>Roles</h2>
+        <p>One file, one role.</p>
+        <pre><code>---
 title: "Commit Don't Push"
 role: epilog
 ---
 
 # A Fresh Start</code></pre>
-    </section>
+      </section>
 
-    <section class="block tables" id="tables">
-      <h2>Tables that calculate</h2>
-      <p>A cell that starts with <code>=</code> calculates. Readers see only the results.</p>
-      <pre><code>| Item   | Qty | Price | Line total   |
+      <section class="block tables" id="tables">
+        <h2>Tables that calculate</h2>
+        <p>A cell that starts with <code>=</code> calculates. Readers see only the results.</p>
+        <pre><code>| Item   | Qty | Price | Line total   |
 |--------|-----|-------|--------------|
-| Apples |   2 |     3 |       =B2*C2 |
+| Apples |   2 |     3 |       =C2*C3 |
 | Pears  |   4 |     5 | =@Qty*@Price |</code></pre>
-    </section>
+      </section>
 
-    <section class="block breaks" id="breaks">
-      <h2>Breaks</h2>
-      <p><code>* * *</code> is a pause in the scene. <code>//break</code> advances the story one column at a time. <code>//break page</code> forces a turn.</p>
-      <p>Use <code>//break odd</code> or <code>//break even</code> for even more control.</p>
-    </section>
+      <section class="block breaks" id="breaks">
+        <h2>Breaks</h2>
+        <p><code>---</code> is a pause in the scene. <code>//break</code> advances the story one column at a time. <code>//break page</code> forces a turn.</p>
+        <p>Use <code>//break odd</code> or <code>//break even</code> when the page side must be specific.</p>
+      </section>
 
-    <section class="block csv" id="csv">
-      <h2>CSV first class</h2>
-      <p>A <code>.csv</code> is a table source with the same calculation dialect. Put it in the <code>spine</code>, or open it alone.</p>
-      <pre><code>spine:
+      <section class="block csv" id="csv">
+        <h2>CSV first class</h2>
+        <p>A <code>.csv</code> is a table source with the same calculation dialect. Put it in the <code>spine</code>, or open it alone.</p>
+        <pre><code>spine:
   - { file: "prices.csv", role: chapter }</code></pre>
-    </section>
-  </main>
+      </section>
+    </main>
 
-  <footer>
-    <p class="copy">© 2026 <a href="https://plaintexthumans.com">Plain Text Humans</a></p>
-  </footer>
+    <footer>
+      <p class="copy">© 2026 <a href="https://plaintexthumans.com">Plain Text Humans</a>.</p>
+    </footer>
+  </div>
 </body>
 </html>
